@@ -42,7 +42,7 @@
       try {
         if (want === 'api') raw = await fetchJson('data/api-sample.json');
         else {
-          try { raw = await fetchJson('data/catalog.json'); }
+          try { raw = await fetchJson('data/catalog.json?v=dimensions-20261114'); }
           catch { raw = await fetchJson('data/current.json'); }
         }
       }
@@ -53,7 +53,7 @@
     d.note = note;
     if (d.mode === 'collected') {
       try {
-        const ranking = await fetchJson('data/top50.json');
+        const ranking = await fetchJson('data/top50.json?v=selection-20261117b');
         if (ranking.dataAsOf !== d.dataAsOf) throw Error('榜单与采集日期不同');
         ranking.items.forEach((item, index) => picks.set(item.categoryId, { ...item, rank: index + 1 }));
       } catch (error) {
