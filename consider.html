@@ -310,12 +310,19 @@ dialog::backdrop{background:rgba(23,25,29,.55)}
 #rank-preview h1{font-size:24px;margin:0}
 .static-pick{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 18px;margin:12px 0}
 .static-pick h2{font-size:17px;margin:0}.static-pick p{margin:5px 0}.static-pick a{text-decoration:underline}
+
+.market-switch{display:inline-flex;align-items:center;gap:2px;padding:2px;border:1px solid var(--band3);
+  border-radius:8px;background:var(--band2);white-space:nowrap}
+.market-switch a{display:block;padding:5px 10px;border-radius:5px;color:var(--bandtext);
+  font-size:13px;text-decoration:none}
+.market-switch a:hover{text-decoration:underline}
+.market-switch a[aria-current]{background:var(--bandtext);color:var(--band);font-weight:650}
 </style>
 </head>
 <body class="reading-preview">
 <div class="band"><div class="band-in">
   <div class="topline">
-    <div class="brand">SellerScout<small>美国站 · 汽配选品</small></div>
+    <div class="brand">SellerScout<small>美国站 · 汽配选品</small></div><nav class="market-switch" aria-label="选择站点"><a href="index.html" lang="zh-CN" aria-current="page">美国站</a><a href="ca.html" lang="zh-CN">加拿大站</a></nav>
     <div class="mode" id="modeBadge" role="status"></div>
     <button class="saved-btn" id="showSaved">我的备选 <b id="savedCount">0</b></button>
   </div>
