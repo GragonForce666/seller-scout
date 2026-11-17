@@ -59,11 +59,12 @@
     if (!raw) raw = window.SCOUT_MOCK;
     const d = C.normalizeDataset(raw);
     d.note = note;
-    if (d.mode === 'collected' && !salesPreset) {
+    if (d.mode === 'collected') {
       try {
-        const ranking = await fetchJson('data/top50.json?v=selection-20261117b');
+        const ranking = await fetchJson(salesPreset ? 'data/sales30-directions.json' : 'data/top50.json?v=selection-20261117b');
         if (ranking.dataAsOf !== d.dataAsOf) throw Error('榜单与采集日期不同');
         ranking.items.forEach((item, index) => picks.set(item.categoryId, { ...item, rank: index + 1 }));
+        if (salesPreset) for (const c of d.categories) c.direction = picks.get(c.id)?.direction;
       } catch (error) {
         rankingError = '榜单读取失败，请刷新重试';
         console.error(error);
@@ -132,11 +133,17 @@
   function view() {
     const all = C.filterCategories(data.categories, state.filters);
     const ranked = [];
-    for (const c of all) {
-      const pick = picks.get(c.id);
-      if (!pick) continue;
-      const p = c.products.find(product => product.asin === pick.asin);
-      if (p) ranked.push({ ...c, products: [p], pick });
+    const filtered = new Map(all.map(c => [c.id, c]));
+    const parents = new Set();
+    for (const pick of picks.values()) {
+      const c = filtered.get(pick.categoryId);
+      if (!c) continue;
+      const eligible = new Map(c.products.map(p => [p.asin, p]));
+      const p = (pick.asins || [pick.asin]).map(id => eligible.get(id)).find(p => p && !parents.has(p.parentAsin || p.asin));
+      if (!p) continue;
+      parents.add(p.parentAsin || p.asin);
+      ranked.push({ ...c, products: [p], pick: salesPreset ? { ...pick, rank: ranked.length + 1 } : pick });
+      if (ranked.length === 50) break;
     }
     const pool = state.tier === ALL ? all.filter(c => c.products.length)
       : state.tier === TOP ? ranked : all.filter(c => c.tier === state.tier);
@@ -147,7 +154,9 @@
     const selected = tree.index.get(state.node) || tree.root;
     const inNode = new Set(selected.allCats);
     let results = pool.filter(c => inNode.has(c.id));
-    if (state.tier === TOP) results.sort((a, b) => a.pick.rank - b.pick.rank);
+    if (state.tier === TOP) {
+      results.sort((a, b) => (salesPreset && state.sort === 'price' ? a.products[0].price - b.products[0].price : 0) || a.pick.rank - b.pick.rank);
+    }
     else if (state.sort === 'default') results.sort((a, b) => tree.order.get(a.id) - tree.order.get(b.id));
     else if (state.sort === 'count') results.sort((a, b) => b.products.length - a.products.length || tree.order.get(a.id) - tree.order.get(b.id));
     else if (state.sort === 'name') results.sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'));
@@ -155,7 +164,7 @@
     const resultKey = JSON.stringify([state.tier, state.node, state.sort, state.filters]);
     if (resultKey !== state.resultKey) { state.page = 1; state.resultKey = resultKey; }
     let ordered = results;
-    if (salesPreset && state.sort === 'price' && !unitIsCat) {
+    if (salesPreset && state.sort === 'price' && !unitIsCat && state.tier !== TOP) {
       const rows = results.flatMap(c => c.products.map(p => ({ c, p })));
       rows.sort((a, b) => a.p.price - b.p.price || a.p.asin.localeCompare(b.p.asin));
       ordered = [];
@@ -165,7 +174,7 @@
         else ordered.push({ ...c, products: [p] });
       }
     }
-    const pagination = C.paginateCategories(ordered, state.page);
+    const pagination = salesPreset && state.tier === TOP ? C.paginateCategories(ordered, 1, 50, 50) : C.paginateCategories(ordered, state.page);
     state.page = pagination.page;
     return { all, ranked, pool, results, countOf, selected, unitIsCat, pagination };
   }
@@ -181,14 +190,17 @@
     const eligible = C.filterCategories(data.categories, C.DEFAULT_FILTERS).filter(c => c.products.length);
     const total = eligible.reduce((count, c) => count + c.products.length, 0);
     if (salesPreset || data.mode === 'collected') $('modeBadge').insertAdjacentText('afterbegin', `合格 ${total.toLocaleString('en-US')} 款 / ${eligible.length} 小类 · `);
-    $('modeBadge').title = data.source || '';
+    if (live) {
+      $('modeBadge').innerHTML = `<span>合格 ${total.toLocaleString('en-US')} 款 / ${eligible.length} 小类</span><span>${esc(data.dataAsOf)}</span>${other}`;
+    }
+    $('modeBadge').title = live ? label + ' · ' + data.source : data.source || '';
   }
   function renderTiers(v) {
-    const tiers = salesPreset ? [ALL, ...C.TIERS] : data.mode === 'collected' ? [TOP, ...C.TIERS] : C.TIERS;
+    const tiers = data.mode === 'collected' ? [TOP, ...C.TIERS] : salesPreset ? [ALL, ...C.TIERS] : C.TIERS;
     $('tiers').innerHTML = tiers.map(t => {
       const cats = t === ALL ? v.all.filter(c => c.products.length) : t === TOP ? v.ranked : v.all.filter(c => c.tier === t);
       const n = cats.reduce((total, c) => total + c.products.length, 0);
-      const numbers = t === '不推荐' ? '暂缓方向' : t === TOP ? `<b>${n}</b> 款 · 跨两档精选` : `<b>${n}</b> 款 · ${cats.length} 小类`;
+      const numbers = t === '不推荐' ? '暂缓方向' : t === TOP ? `<b>${n}</b> 个方向 · 每类 1 款` : `<b>${n}</b> 款 · ${cats.length} 小类`;
       return `<button class="tier${state.tier === t ? ' active' : ''}" data-tier="${t}" aria-pressed="${state.tier === t}">
         <strong>${t}</strong><span class="tier-num">${numbers}</span></button>`;
     }).join('');
@@ -279,8 +291,8 @@
   }
   function pkgHtml(p) {
     const k = p.pkg;
-    const label = k.sizeLabel ? `合格 · ${esc(k.sizeLabel)}` : '合格';
-    return `<div class="pkg"><span class="pkg-badge pass">${label}</span><details class="package-detail"><summary>包装尺寸</summary>${k.dimsInches.map(cm).join(' × ')} 英寸 · 长 + 2 ×（宽 + 高）= ${cm(k.formulaInches)} 英寸</details></div>`;
+    const sizeNote = k.sizeLabel ? `<span class="tag fee-label" title="${k.sizeLabel === 'AHS' ? '公式值超过 108 至 130 英寸' : '公式值超过 130 英寸'} · 附加费提示">${esc(k.sizeLabel)}</span>` : '';
+    return `<div class="pkg"><span class="pkg-badge pass">合格</span>${sizeNote}<details class="package-detail"><summary>包装尺寸</summary>${k.dimsInches.map(cm).join(' × ')} 英寸 · 长 + 2 ×（宽 + 高）= ${cm(k.formulaInches)} 英寸${k.sizeLabel ? ` · ${esc(k.sizeLabel)}（尺寸附加费提示）` : ''}</details></div>`;
   }
   function imageHtml(p) {
     const img = p.image ? `<img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy" decoding="async" width="112" height="112">` : '<span class="noimg">暂无图片</span>';
@@ -469,11 +481,16 @@
     const v = view();
     renderTiers(v); renderTree(v); crumbs(v); renderList(v);
     $('sellerFilter').value = state.filters.seller; $('fulfillFilter').value = state.filters.fulfillment;
-    $('sort').hidden = state.tier === TOP || v.unitIsCat;
+    const rankedSort = salesPreset && state.tier === TOP && $('sort').querySelector('[value="rank"]');
+    $('sort').hidden = (state.tier === TOP && !rankedSort) || v.unitIsCat;
+    for (const option of $('sort').options) {
+      option.hidden = rankedSort ? !['rank', 'price'].includes(option.value) : option.value === 'rank';
+    }
     $('sort').value = state.sort;
     if (salesPreset) {
       for (const id of ['minPrice', 'minSales']) {
         const input = $(id);
+        input.disabled = v.unitIsCat;
         if (document.activeElement !== input) input.value = state.filters[id] === Infinity ? '' : state.filters[id];
         input.setAttribute('aria-invalid', String(!input.validity.valid));
       }
@@ -583,7 +600,11 @@
       const t = e.target.closest('[data-node],[data-tier],[data-expand],[data-save],[data-remove],[data-browse],[data-norm],[data-page],#reset,#resetAll,#treeToggle');
       if (!t) return;
       if (t.dataset.node !== undefined) selectNode(t.dataset.node, !!t.closest('#tree'));
-      else if (t.dataset.tier) { state.tier = t.dataset.tier; state.node = '__root__'; render(); }
+      else if (t.dataset.tier) {
+        state.tier = t.dataset.tier;
+        if (salesPreset && state.sort !== 'price') state.sort = state.tier === TOP ? 'rank' : 'fourth';
+        state.node = '__root__'; render();
+      }
       else if (t.dataset.expand) { toggleEvidence(t.dataset.expand); }
       else if (t.dataset.save) { toggleSaved(t.dataset.save, t.dataset.cat); refreshSavedButtons(); }
       else if (t.dataset.remove) { saved = saved.filter(s => s.id !== t.dataset.remove); persistSaved(); savedRender(); refreshSavedButtons(); }
@@ -591,7 +612,8 @@
         const category = data.categories.find(c => c.id === t.dataset.browse);
         if (category) {
           state.tier = category.tier;
-          state.filters = initialFilters();
+          if (state.sort === 'rank') state.sort = 'fourth';
+          state.filters = salesPreset ? { ...state.filters, query: '' } : initialFilters();
           selectNode(category.id, false);
           document.querySelector('.resultbar').scrollIntoView({ block: 'start' });
         }
@@ -629,7 +651,7 @@
 
   loadData().then(d => {
     data = d;
-    if (salesPreset) { state.tier = ALL; state.sort = 'fourth'; }
+    if (salesPreset) { state.tier = d.mode === 'collected' ? TOP : ALL; state.sort = state.tier === TOP ? 'rank' : 'fourth'; }
     else if (d.mode === 'collected') state.tier = TOP;
     indexData(); saved = loadSaved(); renderMode(); bind(); render();
     document.body.dataset.mode = data.mode;

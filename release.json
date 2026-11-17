@@ -2,8 +2,8 @@
   "dataAsOf": "2026-11-17",
   "categories": 247,
   "products": 1981,
-  "files": 367,
-  "bytes": 25864264,
+  "files": 368,
+  "bytes": 24819200,
   "source": "Adopted ui/ static app; no raw captures, credentials or agent logs",
   "coverage": {
     "completed": 1615,

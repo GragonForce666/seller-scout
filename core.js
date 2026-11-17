@@ -221,8 +221,8 @@
       && (f.fulfillment === 'all' || p.fulfillment === f.fulfillment)
       && (f.size === 'all' || sizeBucket(p) === f.size);
   }
-  function textOf(c) { return [c.name, ...c.path.map(n => n.name), ...c.path.map(n => n.originalName || '')].join(' ').toLowerCase(); }
-  function productText(p) { return [p.name, ...p.highlights, p.asin || ''].join(' ').toLowerCase(); }
+  function textOf(c) { return [c.name, c.direction || '', ...c.path.map(n => n.name), ...c.path.map(n => n.originalName || '')].join(' ').toLowerCase(); }
+  function productText(p) { return [p.name, p.originalTitle || '', ...p.highlights, p.asin || ''].join(' ').toLowerCase(); }
 
   /** Apply product filters + search. Returns categories (copies) that should appear for the given tier set.
    *  A category matched by name keeps all its filtered products; otherwise only products matching the query. */
