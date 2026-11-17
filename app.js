@@ -26,6 +26,9 @@
 
   // ---------------- data loading ----------------
   async function fetchJson(url) {
+    // Published documents carry their initial datasets, including when opened as files.
+    const embedded = document.getElementById(url.split('?')[0]);
+    if (embedded && embedded.type === 'application/json') return JSON.parse(embedded.textContent);
     const r = await fetch(url, { cache: 'no-cache' });
     if (!r.ok) throw new Error(`${url} HTTP ${r.status}`);
     return r.json();
@@ -79,7 +82,12 @@
   // ---------------- saved list ----------------
   function storage() { try { return window.localStorage; } catch { return null; } }
   function loadSaved() {
-    const ls = storage(); if (!ls) return [];
+    const ls = storage();
+    if (!ls) return saved;
+    try { return readSaved(ls); }
+    catch { return saved; } // Some embedded browsers expose Storage but throw on getItem.
+  }
+  function readSaved(ls) {
     let list = C.parseSaved(ls.getItem(C.savedKey(data.mode)));
     if (data.mode === 'mock' && !ls.getItem(C.savedKey('mock')) && ls.getItem(LEGACY_KEY)) {
       let legacy = [];
@@ -584,5 +592,12 @@
     indexData(); saved = loadSaved(); renderMode(); bind(); render();
     document.body.dataset.mode = data.mode;
     window.__scout = { data, tree, state, saved: () => saved, render };
+    document.body.classList.remove('reading-preview');
+    document.getElementById('rank-preview')?.remove();
+  }).catch(error => {
+    console.error('SellerScout 初始化失败', error);
+    const status = document.getElementById('preview-status');
+    if (status) status.textContent = '当前显示可直接浏览的 Top 50。';
+    else $('list').textContent = '选品数据加载失败，请刷新重试。';
   });
 })();
