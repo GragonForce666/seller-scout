@@ -2,7 +2,7 @@
   "dataAsOf": "2026-11-11",
   "categories": 785,
   "products": 3434,
-  "files": 359,
-  "bytes": 15972354,
+  "files": 362,
+  "bytes": 17505907,
   "source": "Adopted ui/ static app; no raw captures, credentials or agent logs"
 }
