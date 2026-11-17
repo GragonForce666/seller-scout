@@ -308,6 +308,7 @@ dialog::backdrop{background:rgba(23,25,29,.55)}
 .sales-toolbar{grid-template-columns:repeat(4,minmax(0,1fr));align-items:end}.sales-toolbar .search{grid-column:1/-1}
 .filter-field{font-size:12px;color:var(--muted);min-width:0;display:grid;gap:4px}
 .sales-toolbar .filter-field input,.sales-toolbar .filter-field select,.resultbar select{font:inherit;font-size:14px;color:var(--ink);min-width:0;border:1px solid var(--line2);border-radius:8px;background:var(--card);padding:8px 10px}
+.sales-toolbar .filter-field select{appearance:auto;cursor:pointer}
 .sales-toolbar input[aria-invalid=true]{outline:1px solid #a33}
 .resultbar select{font-size:12px;padding:4px 8px;margin-left:auto}.resultbar select:not([hidden]) + .count{margin-left:0}
 @media(max-width:650px){.sales-toolbar{grid-template-columns:repeat(2,minmax(0,1fr))}.fee-label{background:#fff4d9;color:#79540b;border-color:#e9cf91}.fixed-rules{flex-wrap:wrap;overflow:visible}.resultbar{flex-wrap:wrap}.fixed-rules span{white-space:normal}}
