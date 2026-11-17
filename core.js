@@ -169,6 +169,7 @@
       entryReason: str(c.entryReason),
       displayReason: str(c.displayReason),
       collectionState: str(c.collectionState),
+      rankDate: str(c.rankDate),
       evidenceUrl: safeUrl(c.evidenceUrl),
       months,
       series: normalizeSeries(c.series, months.length),
@@ -216,6 +217,7 @@
   function sizeBucket(p) { return p.pkg.status === 'conflict' ? 'unknown' : p.pkg.status; }
   function matchesProduct(p, f) {
     return (f.minPrice === undefined || (p.price !== null && p.price >= f.minPrice))
+      && (f.maxSales === undefined || (Number.isFinite(f.maxSales) && p.sales !== null && p.sales >= 1 && p.sales <= f.maxSales))
       && (f.minSales === undefined || (p.sales !== null && p.sales >= f.minSales))
       && (f.seller === 'all' || p.seller === f.seller)
       && (f.fulfillment === 'all' || p.fulfillment === f.fulfillment)

@@ -1,24 +1,29 @@
 {
   "dataAsOf": "2026-11-17",
-  "categories": 247,
-  "products": 1981,
+  "categories": 735,
+  "products": 11203,
   "files": 368,
-  "bytes": 34316429,
+  "bytes": 50520411,
   "source": "Adopted ui/ static app; no raw captures, credentials or agent logs",
   "coverage": {
     "completed": 1615,
     "target": 1615,
     "incomplete": 0,
-    "qualifiedCategories": 247,
-    "withFourth": 223,
-    "scopeExcluded": 7,
-    "headsCompleted": 247,
+    "qualifiedCategories": 735,
+    "withFourth": 643,
+    "scopeExcluded": 34,
+    "headsCompleted": 605,
     "sizes": {
-      "pass": 1981,
-      "fail": 160,
-      "unknown": 482
+      "pass": 11203,
+      "unknown": 2370,
+      "fail": 1249
     },
-    "cachedPackagesAdded": 0
+    "cachedPackagesAdded": 0,
+    "historicalHeads": 130,
+    "historicalPackages": 0,
+    "defaultProducts": 9302,
+    "defaultCategories": 717,
+    "reusedAt30": 56
   },
   "markets": {
     "US": "index.html",

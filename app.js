@@ -10,9 +10,10 @@
   const cm = v => v == null || !Number.isFinite(v) ? DASH : String(Math.round(v * 100) / 100);
   const TOP = 'Top 50';
   const ALL = '全部合格';
-  const salesPreset = Boolean($('minSales'));
+  const salesField = $('maxSales') ? 'maxSales' : 'minSales';
+  const salesPreset = Boolean($(salesField));
   const initialFilters = () => salesPreset
-    ? { ...C.DEFAULT_FILTERS, minPrice: 100, minSales: 30 } : { ...C.DEFAULT_FILTERS };
+    ? { ...C.DEFAULT_FILTERS, minPrice: 100, [salesField]: 30 } : { ...C.DEFAULT_FILTERS };
   const preferredFourth = n => n !== null && (salesPreset ? n <= 50 : n < 50);
   const picks = new Map();
   let rankingError = '';
@@ -123,7 +124,7 @@
       if (!hit) return { snap: s, present: false };
       const c = data.categories.find(x => x.id === s.categoryId && x.products.some(p => p.id === s.id)) || hit.c;
       return { snap: { ...C.snapshot(hit.p, c, data.mode), savedAt: s.savedAt }, present: true };
-    }).filter(({ snap }) => snap.pkg?.status === 'pass');
+    }).filter(({ snap }) => snap.pkg?.status === 'pass' && (salesField !== 'maxSales' || snap.sales >= 1));
   }
 
   // ---------------- view model ----------------
@@ -187,11 +188,11 @@
     const date = data.dataAsOf ? ` · ${esc(String(data.dataAsOf).slice(0, 10))}` : '';
     const other = live ? '<a href="legacy.html">旧方案</a>' : salesPreset ? '' : data.mode === 'mock' ? '<a href="?data=current">看采集数据</a>' : '<a href="?data=mock">看 Mock</a>';
     $('modeBadge').innerHTML = `<span class="mode-dot mode-${esc(data.mode)}" aria-hidden="true"></span>${esc(label)}${date}${data.note ? `<span class="mode-note">${esc(data.note)}</span>` : ''}${other}`;
-    const eligible = C.filterCategories(data.categories, C.DEFAULT_FILTERS).filter(c => c.products.length);
+    const eligible = C.filterCategories(data.categories, initialFilters()).filter(c => c.products.length);
     const total = eligible.reduce((count, c) => count + c.products.length, 0);
     if (salesPreset || data.mode === 'collected') $('modeBadge').insertAdjacentText('afterbegin', `合格 ${total.toLocaleString('en-US')} 款 / ${eligible.length} 小类 · `);
     if (live) {
-      $('modeBadge').innerHTML = `<span>合格 ${total.toLocaleString('en-US')} 款 / ${eligible.length} 小类</span><span>${esc(data.dataAsOf)}</span>${other}`;
+      $('modeBadge').innerHTML = `<span>默认合格 ${total.toLocaleString('en-US')} 款 / ${eligible.length} 小类</span><span>${esc(data.dataAsOf)}</span>${other}`;
     }
     $('modeBadge').title = live ? label + ' · ' + data.source : data.source || '';
   }
@@ -279,7 +280,7 @@
     $('crumbs').innerHTML = parts.join('<span class="crumb-sep" aria-hidden="true">›</span>');
     const prods = v.results.reduce((s, c) => s + c.products.length, 0);
     $('resultCount').innerHTML = v.unitIsCat ? '' : `<b>${v.results.length}</b> 个小类${v.unitIsCat ? '' : ` · <b>${prods}</b> 款商品`}`;
-    const dirty = (salesPreset && (state.filters.minPrice !== 100 || state.filters.minSales !== 30)) || state.node !== '__root__' || state.filters.query || state.filters.seller !== 'all' || state.filters.fulfillment !== 'all' || state.filters.size !== 'pass';
+    const dirty = (salesPreset && (state.filters.minPrice !== 100 || state.filters[salesField] !== 30)) || state.node !== '__root__' || state.filters.query || state.filters.seller !== 'all' || state.filters.fulfillment !== 'all' || state.filters.size !== 'pass';
     $('resetAll').hidden = !dirty;
   }
 
@@ -313,7 +314,8 @@
     if (c.fourth === null) return `<b>${c.fourthState === 'conflict' ? '排名冲突' : '未取得'}</b>`;
     const conflict = c.fourthState === 'conflict' ? `<span class="pill warn" title="${esc(c.fourthRule || "多条第4名记录不一致")}">记录冲突</span>` : '';
     const priority = !salesPreset && !conflict && preferredFourth(c.fourth) ? '<span class="pill ok">低于50</span>' : '';
-    return `<b>${c.fourth} 件</b>${conflict}${priority}`;
+    const date = c.rankDate && c.rankDate !== data.dataAsOf ? ` <small>${esc(c.rankDate)}</small>` : '';
+    return `<b>${c.fourth} 件</b>${date}${conflict}${priority}`;
   }
   const SEASON_TEXT = { partial: '缺月', missing: '无数据', incomparable: '不可比' };
   function spreadText(c) {
@@ -363,7 +365,7 @@
     const seg = hasChart ? `<div class="seg" role="group" aria-label="曲线口径"><button data-norm="0" aria-pressed="${!state.chartNorm}">原始销量</button><button data-norm="1" aria-pressed="${state.chartNorm}">按各自均值</button></div>` : '';
     return `${c.entryReason ? `<div class="entry-basis"><b>原分档依据</b><p>${esc(c.entryReason)}</p></div>` : ''}<div class="evidence">
       <div class="fourth"><small>小类 BSR 第4名月销</small><strong>${c.fourth === null ? DASH : c.fourth}<span>件</span></strong>
- <p>${fourthNote}</p>${rankDetails(c)}
+ <p>${fourthNote}${c.rankDate ? ` · ${esc(c.rankDate)}` : ''}</p>${rankDetails(c)}
         <a class="ext" href="${esc(c.bestsellerUrl)}" target="_blank" rel="noopener noreferrer">小类畅销榜 ↗</a></div>
       <div class="trend"><div class="trend-head"><b>当前前三名近12个月父体月销</b>${seg}<div class="legend">${legend}</div></div>
         ${hasChart ? `<canvas data-chart="${esc(c.id)}" role="img" aria-label="${esc(c.name)}前三名近12个月月销量走势，数值见下方表格"></canvas>` : '<p class="nodata">暂无走势数据</p>'}
@@ -376,7 +378,7 @@
     const deferred = c.collectionState === 'not-collected';
     const count = c.pageCategoryTotal === undefined ? c.products.length : c.pageCategoryTotal;
     const countText = count > c.products.length ? `本页 ${c.products.length} / 共 ${count} 款` : `${count} 款`;
-    const reason = c.pick?.reason || (deferred ? (c.reason || c.entryReason) : null);
+    const reason = c.pick?.notesByAsin?.[c.products[0]?.asin] || c.pick?.reason || (deferred ? (c.reason || c.entryReason) : null);
     const body = c.products.length ? c.products.map(p => productRow(p, c)).join('')
       : deferred ? '' : `<p class="no-picks">${esc(c.reason || '当前筛选下没有符合条件的商品')}</p>`;
     return `<article class="cat tier-${METER[c.tier]}" data-category="${esc(c.id)}">
@@ -425,8 +427,8 @@
     });
   }
   function emptyState(v) {
-    if (salesPreset && (!Number.isFinite(state.filters.minPrice) || !Number.isFinite(state.filters.minSales)))
-      return '<div class="empty">最低售价须为 100 美元以上，最低月销须为 30 件以上的整数（含边界）。</div>';
+    if (salesPreset && (!Number.isFinite(state.filters.minPrice) || !Number.isFinite(state.filters[salesField])))
+      return salesField === 'maxSales' ? '<div class="empty">最低售价须 ≥100 美元，最高父体月销须为至少 1 件的整数。</div>' : '<div class="empty">最低售价须为 100 美元以上，最低月销须为 30 件以上的整数（含边界）。</div>';
     if (state.tier === TOP && rankingError) return `<div class="empty">${rankingError}</div>`;
     if (v.pool.length && !v.results.length) return '<div class="empty"><h3>这个类目没有匹配结果</h3><button class="btn" data-node="__root__">返回全部类目</button></div>';
     return '<div class="empty"><h3>当前筛选下没有匹配结果</h3><button class="btn ghost" id="reset">清除筛选</button></div>';
@@ -488,7 +490,7 @@
     }
     $('sort').value = state.sort;
     if (salesPreset) {
-      for (const id of ['minPrice', 'minSales']) {
+      for (const id of ['minPrice', salesField]) {
         const input = $(id);
         input.disabled = v.unitIsCat;
         if (document.activeElement !== input) input.value = state.filters[id] === Infinity ? '' : state.filters[id];
@@ -627,7 +629,7 @@
     $('sellerFilter').onchange = e => { state.filters.seller = e.target.value; render(); };
     $('fulfillFilter').onchange = e => { state.filters.fulfillment = e.target.value; render(); };
     if (salesPreset) {
-      for (const id of ['minPrice', 'minSales']) {
+      for (const id of ['minPrice', salesField]) {
         $(id).oninput = e => {
           state.filters[id] = e.target.validity.valid ? e.target.valueAsNumber : Infinity;
           render();
