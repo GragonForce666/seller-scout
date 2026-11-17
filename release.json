@@ -2,8 +2,7 @@
   "dataAsOf": "2026-11-11",
   "categories": 785,
   "products": 3434,
-  "files": 358,
-  "bytes": 10403481,
-  "source": "Adopted ui/ static app; no raw captures, credentials or agent logs",
-  "releaseName": "2026-11-12-current-catalog"
+  "files": 359,
+  "bytes": 10959125,
+  "source": "Adopted ui/ static app; no raw captures, credentials or agent logs"
 }

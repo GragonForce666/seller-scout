@@ -1,0 +1,319 @@
+{
+  "dataAsOf": "2026-11-11",
+  "items": [
+    {
+      "categoryId": "15730021",
+      "asin": "B0H236P3QY",
+      "direction": "倒车辅助灯",
+      "reason": "第 4 名月销 14 件；3 英寸薄灯体与 JK 专用接线把比较范围缩到同类改装套件。"
+    },
+    {
+      "categoryId": "15723991",
+      "asin": "B0H6P26KML",
+      "direction": "变速箱钟形壳",
+      "reason": "第 4 名月销 35 件；NV4500 与 5.9L 发动机的组合明确，需按壳体接口核实适配。"
+    },
+    {
+      "categoryId": "318382011",
+      "asin": "B0FG1VRFBX",
+      "direction": "水冷中冷器",
+      "reason": "第 4 名月销 47 件；2011–2016 Powerstroke 6.7L 水冷款能与风冷结构分开研究。"
+    },
+    {
+      "categoryId": "3146747011",
+      "asin": "B0H71DJXQJ",
+      "direction": "尾门登车梯",
+      "reason": "第 4 名有多条记录，取最高月销 44 件；这款对应第三代 4Runner，能按代际和安装位置找直接竞品。"
+    },
+    {
+      "categoryId": "404673011",
+      "asin": "B0GS7FFTRP",
+      "direction": "摩托车发动机防撞杠",
+      "reason": "第 4 名有多条记录，取最高月销 8 件；VTX 1800 的镀铬护杠有明确车型，需进一步核对安装点和防护能力。",
+      "relatedAsins": [
+        "B0H692MHR5"
+      ]
+    },
+    {
+      "categoryId": "15706741",
+      "asin": "B0GWJ53JPX",
+      "direction": "制动防尘罩",
+      "reason": "第 4 名冲突记录取最高月销 44 件；BDST-00155 是后轮挡尘板，可按件号核对安装间隙，区别于卡钳与摩擦片。"
+    },
+    {
+      "categoryId": "4939611011",
+      "asin": "B0H8NLS5BJ",
+      "direction": "大灯钢制护罩",
+      "reason": "Ridge 系列的大灯外置护罩可独立比较材料和固定方式，无需把整灯总成混进来。"
+    },
+    {
+      "categoryId": "15737921",
+      "asin": "B0HKRG1ZCN",
+      "direction": "货车下挂工具箱",
+      "reason": "18 × 14 × 16 英寸的不锈钢箱有明确安装位置，同类 25 个合格款中可先按箱体规格比价。"
+    },
+    {
+      "categoryId": "15737961",
+      "asin": "B0H2GR7WWR",
+      "direction": "后窗百叶遮阳罩",
+      "reason": "2005–2014 Mustang 的后窗和侧窗成套销售，适合从单一代际研究窗形与套装差价。"
+    },
+    {
+      "categoryId": "15735701",
+      "asin": "B0H6JVXBVF",
+      "direction": "翼子板饰条",
+      "reason": "这对饰条限定 2023–2024 Sportage SX，左右成对，能区分装饰条与整块翼子板。"
+    },
+    {
+      "categoryId": "15710141",
+      "asin": "B0H2R7JC8Q",
+      "direction": "脚踏位储物箱",
+      "reason": "Sprinter 乘客脚踏位多出一处金属储物空间，可按车型年份和安装位置查同结构产品。",
+      "relatedAsins": [
+        "B0H75BGJ3K"
+      ]
+    },
+    {
+      "categoryId": "15718521",
+      "asin": "B0GR9RX5FT",
+      "direction": "预裁车漆保护膜",
+      "reason": "2026–2027 Sportage 的预裁 TPU 膜以车型版型区分，可直接比较覆盖部位与片数。"
+    },
+    {
+      "categoryId": "5285423011",
+      "asin": "B0HGM9K1MT",
+      "direction": "制动卡钳装饰罩",
+      "reason": "对应 Civic Sport/LX 汽油版的前后四件套，可单独研究卡钳外罩及轮内间隙。"
+    },
+    {
+      "categoryId": "5285422011",
+      "asin": "B0HCTGCBG7",
+      "direction": "越野车软式车门",
+      "reason": "Pioneer 700 的软式围挡带卷窗，可按门框版型和封闭范围比较，区别于整套硬门。"
+    },
+    {
+      "categoryId": "15735891",
+      "asin": "B0GL7P21NM",
+      "direction": "摩托车仪表外壳",
+      "reason": "1998–2013 Road Glide 的哑光仪表罩只有外壳，适合从同代安装孔位比较。"
+    },
+    {
+      "categoryId": "404682011",
+      "asin": "B0H3ZM3BLG",
+      "direction": "可调骑手靠背",
+      "reason": "2019–2026 Ryker 的驾驶员靠背可调，代表单独加装靠背这一方向。"
+    },
+    {
+      "categoryId": "491447011",
+      "asin": "B0HDT48HR6",
+      "direction": "车顶行李篮",
+      "reason": "64 × 39 英寸的篮体配 21 立方英尺货袋，组合内容清楚，包装仍符合新规。"
+    },
+    {
+      "categoryId": "404680011",
+      "asin": "B0H1VD8QRJ",
+      "direction": "摩托车软边包",
+      "reason": "GSX8S／GSX8R 软质侧包成套销售，可围绕车侧固定方式比较同款车型配件。"
+    },
+    {
+      "categoryId": "15735991",
+      "asin": "B0H6W223NX",
+      "direction": "发动机底部防溅板",
+      "reason": "HR-V 前下护板带替换件号 74110-3W0-A01，可按原位安装的板件查竞品。"
+    },
+    {
+      "categoryId": "10806189011",
+      "asin": "B0H46SQCHH",
+      "direction": "车内调平睡眠平台",
+      "reason": "SUV 平台配调平支架，切入点是调平结构，可和单纯的泡棉床垫分开比较。"
+    },
+    {
+      "categoryId": "15709431",
+      "asin": "B0H2QFZV71",
+      "direction": "加宽轮眉",
+      "reason": "1995–2004 Tacoma 的四件套覆盖前后轮拱，套装范围与车型代际都明确。",
+      "relatedAsins": [
+        "B0HG8LZ9J6",
+        "B0H7HY69X2"
+      ]
+    },
+    {
+      "categoryId": "15735561",
+      "asin": "B0H48H7L5N",
+      "direction": "仪表台饰板套装",
+      "reason": "第 4 名记录取最高 2,334 件；Mustang 17 件内饰板有清楚的覆盖清单，可单看整套饰板的价差。"
+    },
+    {
+      "categoryId": "15710151",
+      "asin": "B0H4S81QFP",
+      "direction": "内门板饰件",
+      "reason": "1967–1972 Ford 皮卡的乙烯基门板有明确复原用途，可与完整车门分开比价。"
+    },
+    {
+      "categoryId": "7298810011",
+      "asin": "B0H3P8D7F9",
+      "direction": "摩托车油箱整流罩",
+      "reason": "ZX-6R 的 ABS 碳纹油箱外罩兼顾装饰与表面防护，材质和车型均可作比价条件。"
+    },
+    {
+      "categoryId": "15737411",
+      "asin": "B0H8S8FV42",
+      "direction": "车斗登车踏板",
+      "reason": "Ram 1500 TRX／RHO 替换踏板有件号 82216278AC，可核对安装座和适用年款。"
+    },
+    {
+      "categoryId": "15706921",
+      "asin": "B0H9RZNXQ6",
+      "direction": "越野车备胎架",
+      "reason": "2020–2026 Polaris RZR PRO XP 用架有明确装车对象，可剔除轮胎店展示架后比较。"
+    },
+    {
+      "categoryId": "15737901",
+      "asin": "B0GT4V7LR3",
+      "direction": "尾门货厢延长架",
+      "reason": "这款延长架对应 Silverado／Sierra 1500，能按货厢和尾门几何尺寸比较。"
+    },
+    {
+      "categoryId": "15737841",
+      "asin": "B0H6FDV48J",
+      "direction": "皮卡货厢帐篷",
+      "reason": "4.92 英尺货厢帐篷带自动充气泵，切入短货厢露营，可与地面帐篷分开比较。"
+    },
+    {
+      "categoryId": "15735741",
+      "asin": "B0H75DKKH1",
+      "direction": "厢式车货厢垫",
+      "reason": "Econoline E-Series 的 TPE 货厢垫限定车型和使用位置，可按整片裁型比较。"
+    },
+    {
+      "categoryId": "15710161",
+      "asin": "B0HPH1388Q",
+      "direction": "驾驶室模压地毯",
+      "reason": "这款为 1967–1972 GM 普通驾驶室配黄麻衬底，适合研究整套内饰翻新。"
+    },
+    {
+      "categoryId": "11439431011",
+      "asin": "B0HGVSCX7S",
+      "direction": "卡车卧铺氛围灯",
+      "reason": "TLED-IK80 为 Kenworth 驾驶室及卧铺提供七色照明，可按套件覆盖位置比价。"
+    },
+    {
+      "categoryId": "212246122011",
+      "asin": "B0HKHKLYTF",
+      "direction": "房车净水组件",
+      "reason": "第 4 名月销 54 件；三级过滤器有明确房车用途，滤芯规格可用于找同类对照。"
+    },
+    {
+      "categoryId": "21589995011",
+      "asin": "B0H372XJNQ",
+      "direction": "房车铺位替换床垫",
+      "reason": "4 英寸厚、80 × 42 英寸的床垫针对房车铺位，可按铺位尺寸比较同规格产品。"
+    },
+    {
+      "categoryId": "10806187011",
+      "asin": "B0H9B8KKRY",
+      "direction": "房车移动废水箱",
+      "reason": "30 加仑双轮拖运箱有明确容量与移动方式，可排除固定式储水罐后比较。"
+    },
+    {
+      "categoryId": "3147788011",
+      "asin": "B0HL4334RT",
+      "direction": "房车顶通风扇",
+      "reason": "14 × 14 英寸、12V、可逆气流的机型有标准化比价参数，可先按开口尺寸筛对手。"
+    },
+    {
+      "categoryId": "15720021",
+      "asin": "B0HBQFH5CX",
+      "direction": "滑轨电池托盘",
+      "reason": "30 × 18 英寸双层滑动钢托盘，可按行程、固定方式与托盘尺寸比较。"
+    },
+    {
+      "categoryId": "15709251",
+      "asin": "B0GXTSG713",
+      "direction": "前保险杠扰流唇",
+      "reason": "这款前唇限定 Infiniti Q50 Base 和年款，只需与同款保险杠下沿件比较。"
+    },
+    {
+      "categoryId": "15710131",
+      "asin": "B0GVYCTSL5",
+      "direction": "乘客扶手",
+      "reason": "2020–2026 Spyder RT 的乘客扶手针对后座乘坐需求，可从固定点与车身适配研究。"
+    },
+    {
+      "categoryId": "15737881",
+      "asin": "B0HB951SSG",
+      "direction": "皮卡系固锚点",
+      "reason": "Ford 皮卡用的四件锚点套装有明确安装用途，后续可按安装孔位核对载荷资料。"
+    },
+    {
+      "categoryId": "15737391",
+      "asin": "B0HMYHRL2Y",
+      "direction": "拖车耦合器锁",
+      "reason": "2-5/16 英寸规格明确，可直接对比同球径防盗锁；该类第 4 名已有较高销量。"
+    },
+    {
+      "categoryId": "404685011",
+      "asin": "B0GXTBP52Z",
+      "direction": "越野车后挡风窗",
+      "reason": "Pioneer 500／520 后窗的车架和年款明确，可与前挡风窗分开比价。"
+    },
+    {
+      "categoryId": "5285429011",
+      "asin": "B0H7QW5M6Y",
+      "direction": "摩托车整流侧翼",
+      "reason": "KTM RC 系列的整流侧翼可单独更换，可集中比较侧翼套件而非整车包围。"
+    },
+    {
+      "categoryId": "404681011",
+      "asin": "B0H4GTJBS8",
+      "direction": "骑手乘客双人座",
+      "reason": "Harley Softail 的凝胶双人座配靠背，代表整座更换，可与通用坐垫和座套分开比价。"
+    },
+    {
+      "categoryId": "23501463011",
+      "asin": "B0H8DFSL6J",
+      "direction": "车型专用座椅套",
+      "reason": "RAM 1500 全套座套有明确座椅布局可核；小类第 4 名记录取最高 2,075 件，优先看车型细分。",
+      "relatedAsins": [
+        "B0H9Y9GJC5",
+        "B0GYTF4PW4"
+      ]
+    },
+    {
+      "categoryId": "15735581",
+      "asin": "B0HHDHW6VR",
+      "direction": "全车车衣",
+      "reason": "第 4 名记录取最高 4,289 件；这款聚焦 1979–1993 Mustang 的室内防尘需求，可单看经典车细分。"
+    },
+    {
+      "categoryId": "15706651",
+      "asin": "B0H9145J45",
+      "direction": "免打孔挡泥板",
+      "reason": "第 4 名月销已达 938 件；Outback 前后套装有 110227／120227 件号，可针对免钻孔结构查同款。"
+    },
+    {
+      "categoryId": "15706831",
+      "asin": "B0HCHXFXQJ",
+      "direction": "轮毂装饰罩",
+      "reason": "19 英寸车轮罩适配 2025–2026 Model Y，轮径、年款清晰，可与整只轮辋分开比较。"
+    },
+    {
+      "categoryId": "15729311",
+      "asin": "B0H3SRHPGQ",
+      "direction": "点火锁芯",
+      "reason": "1999–2004 Discovery 2 的锁芯有 QRF000080 件号，可区分机械锁芯与整套点火系统。"
+    },
+    {
+      "categoryId": "15724371",
+      "asin": "B0HK7WL3PX",
+      "direction": "后差速器盖",
+      "reason": "GM AAM 12 螺栓后桥有明确壳盖接口，适合按桥型核对 9.5 与 9.76 英寸的差别。"
+    },
+    {
+      "categoryId": "15724721",
+      "asin": "B0HBQCV17G",
+      "direction": "变速箱油底壳",
+      "reason": "6R80 铝油底壳配放油螺塞、垫片和滤芯，能比较整套保养件与单壳售价。"
+    }
+  ]
+}

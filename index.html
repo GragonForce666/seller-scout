@@ -41,7 +41,7 @@ a{color:inherit}
 .rules{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;padding:2px 0 18px;font-size:12px;color:var(--bandmuted)}
 .rules span{background:var(--band2);border:1px solid var(--band3);border-radius:6px;padding:3px 9px;color:var(--bandtext)}
 .rules .pref{background:transparent;border-style:dashed;color:var(--bandmuted)}
-.tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.tiers{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
 .tier{position:relative;text-align:left;background:var(--band2);border:1px solid var(--band3);border-bottom:0;border-radius:12px 12px 0 0;padding:14px 18px 16px;color:var(--bandtext);display:grid;gap:4px}
 .tier:hover{background:#2a2e35}
 .tier.active{background:var(--canvas);color:var(--ink);border-color:var(--canvas)}
@@ -86,7 +86,7 @@ main{max-width:1440px;margin:0 auto;padding:22px 28px 48px;display:grid;grid-tem
 .tree-toggle{display:none}
 
 /* ---------- toolbar ---------- */
-.toolbar{display:grid;grid-template-columns:minmax(220px,1fr) repeat(4,auto);gap:8px;margin-bottom:12px}
+.toolbar{display:grid;grid-template-columns:minmax(220px,1fr) repeat(3,auto);gap:8px;margin-bottom:12px}
 .search{position:relative}
 .search::before{content:"";position:absolute;left:12px;top:50%;width:11px;height:11px;border:1.8px solid var(--faint);border-radius:50%;transform:translateY(-62%)}
 .search::after{content:"";position:absolute;left:22px;top:58%;width:6px;height:1.8px;background:var(--faint);transform:rotate(45deg)}
@@ -243,7 +243,7 @@ dialog::backdrop{background:rgba(23,25,29,.55)}
 @media (max-width:1100px){
   main{grid-template-columns:228px minmax(0,1fr);gap:16px;padding:18px 18px 40px}
   .band-in,.foot{padding-left:18px;padding-right:18px}
-  .toolbar{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .toolbar{grid-template-columns:repeat(3,minmax(0,1fr))}
   .toolbar .search{grid-column:1/-1}
   .toolbar select{min-width:0}
 }
@@ -268,7 +268,7 @@ dialog::backdrop{background:rgba(23,25,29,.55)}
   .brand small{display:none}
   .mode{order:3;margin-left:0;width:100%;justify-content:flex-start;flex-wrap:wrap;white-space:normal}
   .saved-btn{margin-left:auto}
-  .tiers{gap:6px}
+  .tiers{gap:6px;grid-template-columns:repeat(2,minmax(0,1fr))}
   .tier{padding:9px 10px 11px}
   .tier-top{gap:4px;flex-direction:column;align-items:flex-start}
   .tier strong{font-size:14px;white-space:nowrap}
@@ -295,6 +295,14 @@ dialog::backdrop{background:rgba(23,25,29,.55)}
 .list-pager>div{display:flex;gap:8px;align-items:center}.list-pager select{padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink)}
 .list-pager button:disabled{opacity:.4;cursor:default}.resultbar{scroll-margin-top:170px}
 @media(max-width:600px){.cat-reason{padding-left:14px;padding-right:14px}.list-pager{flex-wrap:wrap;justify-content:center}.list-pager>span{width:100%;text-align:center}.resultbar{scroll-margin-top:20px}}
+.no-counts .tcount{display:none}
+.deferred-group{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:12px 16px;margin-bottom:8px}
+.deferred-group summary,.package-detail summary{cursor:pointer}
+.deferred-group ul{columns:2;padding-left:22px}
+.deferred-group li{padding:4px;break-inside:avoid}
+.rank-no{color:var(--muted);font-variant-numeric:tabular-nums}
+.package-detail{font-size:12px;color:var(--muted)}
+@media(max-width:600px){.deferred-group ul{columns:1}}
 </style>
 </head>
 <body>
@@ -304,7 +312,7 @@ dialog::backdrop{background:rgba(23,25,29,.55)}
     <div class="mode" id="modeBadge" role="status"></div>
     <button class="saved-btn" id="showSaved">我的备选 <b id="savedCount">0</b></button>
   </div>
-  <div class="rules" aria-label="筛选条件"><span>售价 &gt; $150</span><span>父体月销 1–9 件</span><span>上架半年内</span><span>包装 长＋围长 &lt; 165 cm</span><span class="pref">优先：第4名月销 &lt; 50 · 全年需求平稳</span></div>
+  <div class="rules" aria-label="筛选条件"><span>售价 &gt; $150</span><span>父体月销 1–9 件</span><span>上架半年内</span><span>包装最长≤48英寸 · 第二长≤30英寸 · 长+2×（宽+高）≤169英寸</span><span title="用户业务标记，不代表承运商实际费用">长+2×（宽+高）&gt;130英寸：oversize；&gt;108至130英寸：AHS</span><span class="pref">优先：第4名月销 &lt; 50 · 全年需求平稳</span></div>
   <nav class="tiers" id="tiers" aria-label="小类分档"></nav>
 </div></div>
 
@@ -319,7 +327,6 @@ dialog::backdrop{background:rgba(23,25,29,.55)}
       <div class="search"><input id="search" type="search" aria-label="搜索小类、商品或 ASIN" placeholder="搜索小类、商品或 ASIN"></div>
       <select id="sellerFilter" aria-label="销售方"><option value="all">销售方：全部</option><option value="SC">销售方：SC</option><option value="VC">销售方：VC</option><option value="未知">销售方：未知</option></select>
       <select id="fulfillFilter" aria-label="配送方式"><option value="all">配送：全部</option><option value="FBA">配送：FBA</option><option value="FBM">配送：FBM</option><option value="未知">配送：未知</option></select>
-      <select id="sizeFilter" aria-label="包装尺寸，长加围长小于165厘米"><option value="pass">包装：符合尺寸</option><option value="all">包装：全部</option><option value="fail">包装：超出尺寸</option><option value="unknown">包装：待补尺寸</option></select>
       <select id="sort" aria-label="排序"><option value="default">按 Amazon 类目树</option><option value="count">符合商品最多</option><option value="name">按小类名称</option><option value="fourth">第4名销量低优先</option></select>
     </div>
     <div class="resultbar"><nav class="crumbs" id="crumbs" aria-label="当前类目路径"></nav><span class="count" id="resultCount" aria-live="polite"></span><button class="reset-all" id="resetAll" hidden>重置筛选</button></div>
@@ -333,8 +340,8 @@ dialog::backdrop{background:rgba(23,25,29,.55)}
   <div class="dlg-body" id="savedList"></div>
 </dialog>
 
-<script src="core.js"></script>
+<script src="core.js?v=20261117-four-cards"></script>
 <script src="mock-data.js"></script>
-<script src="app.js"></script>
+<script src="app.js?v=20261117-four-cards"></script>
 </body>
 </html>

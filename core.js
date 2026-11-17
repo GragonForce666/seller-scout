@@ -8,8 +8,8 @@
   'use strict';
 
   const TIERS = ['推荐看', '可以考虑', '不推荐'];
-  const SIZE_LIMIT = 165;
-  const EPS = 1e-9; // float noise guard: 165 computed as 164.99999999997 must not pass
+  const SIZE_LIMIT = 169;
+  const EPS = 1e-10; // Inches: only absorb machine floating-point noise at inclusive boundaries.
 
   // ---------- primitive coercion: missing stays null, never 0 ----------
   function num(v) {
@@ -32,7 +32,7 @@
   }
   function oneOf(v, allowed, fallback) { return allowed.includes(v) ? v : fallback; }
 
-  // ---------- package rule (F04): package dims only, cm, L+2(W+H) < 165 strictly ----------
+  // Package inputs remain cm; thresholds and labels use inches, sorted longest first.
   function packageResult(dims, unit) {
     if (unit !== undefined && unit !== null && unit !== 'cm') return { status: 'unknown', value: null, dims: null, reason: 'unit' };
     if (!Array.isArray(dims) || dims.length !== 3) return { status: 'unknown', value: null, dims: null, reason: 'missing' };
@@ -40,7 +40,11 @@
     if (d.some(x => x === null || x <= 0 || x > 1000)) return { status: 'unknown', value: null, dims: null, reason: 'invalid' };
     const [l, w, h] = [...d].sort((a, b) => b - a);
     const value = l + 2 * (w + h);
-    return { status: value < SIZE_LIMIT - EPS ? 'pass' : 'fail', value, dims: [l, w, h], reason: null };
+    const dimsInches = [l, w, h].map(x => x / 2.54);
+    const formulaInches = value / 2.54;
+    const passed = dimsInches[0] <= 48 + EPS && dimsInches[1] <= 30 + EPS && formulaInches <= SIZE_LIMIT + EPS;
+    const sizeLabel = formulaInches > 130 + EPS ? 'oversize' : formulaInches > 108 + EPS ? 'AHS' : null;
+    return { status: passed ? 'pass' : 'fail', value, dims: [l, w, h], dimsInches, formulaInches, sizeLabel, ruleVersion: '2026-11-14', reason: null };
   }
 
   function normalizePkg(raw) {
@@ -50,12 +54,17 @@
     // dims without an explicit cm unit are "unit unknown" -> 待补, never pass
     const calc = unit === 'cm' ? packageResult(p.dims, 'cm') : { status: 'unknown', value: null, dims: null };
     let status = calc.status;
-    if (given === 'conflict') status = 'conflict';
+    if (given === 'unknown' || p.reason === 'suspected-placeholder') status = 'unknown';
+    else if (given === 'conflict') status = 'conflict';
     else if (calc.status !== 'unknown' && (given === 'pass' || given === 'fail') && given !== calc.status) status = 'conflict';
     return {
       status,
       value: calc.value,
       dims: calc.dims,
+      dimsInches: calc.dimsInches || null,
+      formulaInches: calc.formulaInches ?? null,
+      sizeLabel: status === 'pass' || status === 'fail' ? calc.sizeLabel : null,
+      ruleVersion: calc.ruleVersion || null,
       raw: str(p.raw),
       source: str(p.source),
       unit: calc.dims ? 'cm' : str(unit),
@@ -364,7 +373,17 @@
     };
   }
   function parseSaved(text) {
-    try { const v = JSON.parse(text || '[]'); return Array.isArray(v) ? v.filter(x => x && typeof x.id === 'string') : []; } catch { return []; }
+    try {
+      const v = JSON.parse(text || '[]');
+      return Array.isArray(v) ? v.filter(x => x && typeof x.id === 'string').map(x => {
+        const pkg = x.pkg || {};
+        // Saved conclusions belong to an older rule, not conflicting measurements.
+        // Retain actual conflicts and missing/placeholder dimensions, and retain the raw evidence.
+        const status = pkg.ruleVersion !== '2026-11-14' && ['pass', 'fail'].includes(pkg.status) ? null : pkg.status;
+        const updated = normalizePkg({ ...pkg, status });
+        return { ...x, pkg: { ...updated, declaredStatus: updated.status } };
+      }) : [];
+    } catch { return []; }
   }
   /** Map legacy v1 ids ("i-j" mock array indexes) through an explicit table; unknown ids are dropped. */
   function migrateLegacy(legacyIds, legacyMap) {
@@ -373,14 +392,15 @@
   }
 
   // ---------- Excel rows (B03/B04) ----------
-  const SIZE_TEXT = { pass: '符合尺寸', fail: '超出尺寸', unknown: '待补尺寸', conflict: '尺寸冲突' };
+  const SIZE_TEXT = { pass: '合格', fail: '超出尺寸', unknown: '待补尺寸', conflict: '尺寸冲突' };
   const EXPORT_COLUMNS = [
     ['中文标题', 42], ['中文亮点', 38], ['英文标题', 60], ['英文亮点', 45], ['翻译状态', 10],
     ['类目路径', 45], ['售价（USD）', 13], ['月销量（件）', 13], ['上架日期', 12], ['变体数', 9], ['FBA费用（USD）', 14], ['FBA费用来源', 20],
     ['销售方', 9], ['销售方名称', 18], ['销售方依据', 24], ['配送方式', 10],
-    ['包装长（cm）', 12], ['包装宽（cm）', 12], ['包装高（cm）', 12], ['长＋围长（cm）', 14], ['尺寸结果', 11], ['尺寸来源', 20],
+    ['包装长（cm）', 12], ['包装宽（cm）', 12], ['包装高（cm）', 12], ['长+2×（宽+高）（cm）', 24], ['尺寸结果', 11], ['尺寸来源', 20],
     ['小类第4名月销（件）', 18], ['第4名记录状态', 14], ['单款最大高低月差（%）', 20], ['三款标准化综合高低月差（%）', 26], ['ASIN', 14], ['父ASIN', 14],
-    ['Amazon商品链接', 45], ['Amazon类目链接', 45], ['数据模式', 12], ['备选状态', 14],
+    ['Amazon商品链接', 45], ['Amazon类目链接', 45], ['数据模式', 12], ['备选状态', 14], ['长+2×（宽+高）（英寸）', 26], ['尺寸业务标记', 16],
+    ['包装长（英寸）', 16], ['包装宽（英寸）', 16], ['包装高（英寸）', 16],
   ];
   const MODE_TEXT = { collected: '一二档采集', mock: 'Mock演示', 'api-sample': 'API样本', cache: '缓存回放', fixture: '测试数据' };
   const FOURTH_TEXT = { matched: '一致', conflict: '记录冲突，取最高', missing: '未取得' };
@@ -395,6 +415,8 @@
       ...dims, s.pkg ? round2(s.pkg.value) : null, s.pkg ? SIZE_TEXT[s.pkg.status] : '待补尺寸', s.pkg ? s.pkg.source : null,
       s.fourth, FOURTH_TEXT[s.fourthState] || null, num(s.volatilityMax), num(s.volatilityComposite), s.asin, s.parentAsin, s.productUrl, s.categoryUrl,
       MODE_TEXT[s.mode] || s.mode, present ? '当前数据中' : '当前数据未找到',
+      s.pkg ? round2(s.pkg.formulaInches ?? null) : null, s.pkg ? s.pkg.sizeLabel || null : null,
+      ...(s.pkg?.dimsInches || [null, null, null]),
     ];
   }
 

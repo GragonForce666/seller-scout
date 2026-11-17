@@ -7,8 +7,10 @@
   const DASH = '—';
   const money = v => v === null ? DASH : '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const plain = v => v === null ? DASH : String(v);
-  const cm = v => v === null ? DASH : String(Math.round(v * 100) / 100);
-  const DESCRIPTIONS = { '推荐看': '优先从这些小类挑选商品', '可以考虑': '待进一步核实，结合供应链再判断', '不推荐': '进入要求高，暂时放在后面' };
+  const cm = v => v == null || !Number.isFinite(v) ? DASH : String(Math.round(v * 100) / 100);
+  const TOP = 'Top 50';
+  const picks = new Map();
+  let rankingError = '';
   const METER = { '推荐看': 3, '可以考虑': 2, '不推荐': 1 };
   const MODE_BADGE = { collected: '一、二档采集数据', mock: 'Mock 演示数据', 'api-sample': 'API 样本', cache: '缓存回放', fixture: '树结构测试数据' };
   const LEGACY_KEY = 'scout-prototype-saved-v1';
@@ -49,6 +51,16 @@
     if (!raw) raw = window.SCOUT_MOCK;
     const d = C.normalizeDataset(raw);
     d.note = note;
+    if (d.mode === 'collected') {
+      try {
+        const ranking = await fetchJson('data/top50.json');
+        if (ranking.dataAsOf !== d.dataAsOf) throw Error('榜单与采集日期不同');
+        ranking.items.forEach((item, index) => picks.set(item.categoryId, { ...item, rank: index + 1 }));
+      } catch (error) {
+        rankingError = '榜单读取失败，请刷新重试';
+        console.error(error);
+      }
+    }
     if (d.issues.length) console.warn('[SellerScout] 数据检查', d.issues);
     return d;
   }
@@ -97,13 +109,20 @@
       if (!hit) return { snap: s, present: false };
       const c = data.categories.find(x => x.id === s.categoryId && x.products.some(p => p.id === s.id)) || hit.c;
       return { snap: { ...C.snapshot(hit.p, c, data.mode), savedAt: s.savedAt }, present: true };
-    });
+    }).filter(({ snap }) => snap.pkg?.status === 'pass');
   }
 
   // ---------------- view model ----------------
   function view() {
     const all = C.filterCategories(data.categories, state.filters);
-    const pool = all.filter(c => c.tier === state.tier);
+    const ranked = [];
+    for (const c of all) {
+      const pick = picks.get(c.id);
+      if (!pick) continue;
+      const p = c.products.find(product => product.asin === pick.asin);
+      if (p) ranked.push({ ...c, products: [p], pick });
+    }
+    const pool = state.tier === TOP ? ranked : all.filter(c => c.tier === state.tier);
     const unitIsCat = state.tier === '不推荐';
     const weight = c => unitIsCat ? 1 : c.products.length;
     const byId = new Map(pool.map(c => [c.id, c]));
@@ -111,15 +130,16 @@
     const selected = tree.index.get(state.node) || tree.root;
     const inNode = new Set(selected.allCats);
     let results = pool.filter(c => inNode.has(c.id));
-    if (state.sort === 'default') results.sort((a, b) => tree.order.get(a.id) - tree.order.get(b.id));
-    if (state.sort === 'count') results.sort((a, b) => b.products.length - a.products.length || tree.order.get(a.id) - tree.order.get(b.id));
-    if (state.sort === 'name') results.sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'));
-    if (state.sort === 'fourth') results.sort((a, b) => ((a.fourth === null || a.fourthState !== 'matched') ? Infinity : a.fourth) - ((b.fourth === null || b.fourthState !== 'matched') ? Infinity : b.fourth) || tree.order.get(a.id) - tree.order.get(b.id));
+    if (state.tier === TOP) results.sort((a, b) => a.pick.rank - b.pick.rank);
+    else if (state.sort === 'default') results.sort((a, b) => tree.order.get(a.id) - tree.order.get(b.id));
+    else if (state.sort === 'count') results.sort((a, b) => b.products.length - a.products.length || tree.order.get(a.id) - tree.order.get(b.id));
+    else if (state.sort === 'name') results.sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'));
+    else if (state.sort === 'fourth') results.sort((a, b) => ((a.fourth === null || a.fourthState !== 'matched') ? Infinity : a.fourth) - ((b.fourth === null || b.fourthState !== 'matched') ? Infinity : b.fourth) || tree.order.get(a.id) - tree.order.get(b.id));
     const resultKey = JSON.stringify([state.tier, state.node, state.sort, state.filters]);
     if (resultKey !== state.resultKey) { state.page = 1; state.resultKey = resultKey; }
     const pagination = C.paginateCategories(results, state.page);
     state.page = pagination.page;
-    return { all, pool, results, countOf, selected, unitIsCat, pagination };
+    return { all, ranked, pool, results, countOf, selected, unitIsCat, pagination };
   }
 
   // ---------------- header / tiers ----------------
@@ -128,18 +148,19 @@
     const date = data.dataAsOf ? ` · ${esc(String(data.dataAsOf).slice(0, 10))}` : '';
     const other = data.mode === 'mock' ? '<a href="?data=current">看采集数据</a>' : '<a href="?data=mock">看 Mock</a>';
     $('modeBadge').innerHTML = `<span class="mode-dot mode-${esc(data.mode)}" aria-hidden="true"></span>${esc(label)}${date}${data.note ? `<span class="mode-note">${esc(data.note)}</span>` : ''}${other}`;
+    const eligible = C.filterCategories(data.categories, C.DEFAULT_FILTERS).filter(c => c.products.length);
+    const total = eligible.reduce((count, c) => count + c.products.length, 0);
+    if (data.mode === 'collected') $('modeBadge').insertAdjacentText('afterbegin', `合格 ${total.toLocaleString('en-US')} 款 / ${eligible.length} 小类 · `);
     $('modeBadge').title = data.source || '';
   }
   function renderTiers(v) {
-    $('tiers').innerHTML = C.TIERS.map(t => {
-      const cats = v.all.filter(c => c.tier === t);
-      const prods = cats.reduce((s, c) => s + c.products.length, 0);
-      const deferred = data.mode === 'collected' && t === '不推荐' && data.coverage.grade3Deferred > 0 && !data.categories.some(c => c.tier === t);
-      const meter = [1, 2, 3].map(i => `<i class="${i <= METER[t] ? 'on' : ''}"></i>`).join('');
+    const tiers = data.mode === 'collected' ? [TOP, ...C.TIERS] : C.TIERS;
+    $('tiers').innerHTML = tiers.map(t => {
+      const cats = t === TOP ? v.ranked : v.all.filter(c => c.tier === t);
+      const n = cats.reduce((total, c) => total + c.products.length, 0);
+      const numbers = t === '不推荐' ? '暂缓方向' : t === TOP ? `<b>${n}</b> 款 · 跨两档精选` : `<b>${n}</b> 款 · ${cats.length} 小类`;
       return `<button class="tier${state.tier === t ? ' active' : ''}" data-tier="${t}" aria-pressed="${state.tier === t}">
-        <span class="tier-top"><span class="meter" aria-hidden="true">${meter}</span><strong>${t}</strong></span>
-        <span class="tier-num">${deferred ? '暂未采集' : `<b>${cats.length}</b> 小类${t === '不推荐' ? '' : `<span class="sep">·</span><b>${prods}</b> 款`}`}</span>
-        <span class="tier-desc">${DESCRIPTIONS[t]}</span></button>`;
+        <strong>${t}</strong><span class="tier-num">${numbers}</span></button>`;
     }).join('');
   }
 
@@ -149,6 +170,7 @@
     return (pre.length ? `<span class="tpre">${pre.map(esc).join(' › ')} › </span>` : '') + `<span class="tname">${esc(n.labels[n.labels.length - 1])}</span>`;
   }
   function renderTree(v) {
+    $('tree').classList.toggle('no-counts', v.unitIsCat);
     const trail = new Set(C.nodeTrail(v.selected).map(n => n.id));
     const searching = !!state.filters.query.trim();
     const rows = [];
@@ -166,7 +188,7 @@
     tree.root.kids.forEach(k => visit(k, 2));
     const rootSel = v.selected === tree.root;
     const total = v.countOf(tree.root);
-    $('treeUnit').textContent = v.unitIsCat ? '小类数' : '商品数';
+    $('treeUnit').textContent = v.unitIsCat ? '' : '商品数';
     $('tree').innerHTML = `<li role="none"><div role="treeitem" class="trow root${rootSel ? ' sel' : ''}" style="--lv:1" aria-level="1" aria-selected="${rootSel}" tabindex="${rootSel ? 0 : -1}" data-node="__root__"><span class="caret none" aria-hidden="true"></span><span class="tlabel"><span class="tname">全部类目</span></span><span class="tcount">${total}</span></div></li>${rows.join('')}`;
     $('treeToggle').innerHTML = `类目：<b>${esc(rootSel ? '全部类目' : v.selected.labels[v.selected.labels.length - 1])}</b><span class="tt-caret" aria-hidden="true"></span>`;
     $('treeToggle').setAttribute('aria-expanded', state.mobileTree);
@@ -214,7 +236,7 @@
     if (!trail.length) parts[0] = '<span class="crumb cur" aria-current="page">全部类目</span>';
     $('crumbs').innerHTML = parts.join('<span class="crumb-sep" aria-hidden="true">›</span>');
     const prods = v.results.reduce((s, c) => s + c.products.length, 0);
-    $('resultCount').innerHTML = `<b>${v.results.length}</b> 个小类${v.unitIsCat ? '' : ` · <b>${prods}</b> 款商品`}`;
+    $('resultCount').innerHTML = v.unitIsCat ? '' : `<b>${v.results.length}</b> 个小类${v.unitIsCat ? '' : ` · <b>${prods}</b> 款商品`}`;
     const dirty = state.node !== '__root__' || state.filters.query || state.filters.seller !== 'all' || state.filters.fulfillment !== 'all' || state.filters.size !== 'pass';
     $('resetAll').hidden = !dirty;
   }
@@ -227,9 +249,8 @@
   }
   function pkgHtml(p) {
     const k = p.pkg;
-    const badge = { pass: ['pass', '✓', '符合尺寸'], fail: ['fail', '✕', '超出尺寸'], unknown: ['unknown', '?', '待补尺寸'], conflict: ['unknown', '!', '尺寸冲突'] }[k.status];
-    const dims = k.dims ? `包装 ${k.dims.map(cm).join(' × ')} cm<span class="dot">·</span>长＋围长 <b>${cm(k.value)}</b> cm` : k.reason === 'suspected-placeholder' ? '包装尺寸待核（疑似占位）' : '包装尺寸缺失';
-    return `<div class="pkg"><span class="pkg-badge ${badge[0]}"><i aria-hidden="true">${badge[1]}</i>${badge[2]}</span><span class="pkg-dims">${dims}</span></div>`;
+    const label = k.sizeLabel ? `合格 · ${esc(k.sizeLabel)}` : '合格';
+    return `<div class="pkg"><span class="pkg-badge pass">${label}</span><details class="package-detail"><summary>包装尺寸</summary>${k.dimsInches.map(cm).join(' × ')} 英寸 · 长 + 2 ×（宽 + 高）= ${cm(k.formulaInches)} 英寸</details></div>`;
   }
   function imageHtml(p) {
     const img = p.image ? `<img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy" decoding="async" width="112" height="112">` : '<span class="noimg">暂无图片</span>';
@@ -312,16 +333,21 @@
     const deferred = c.collectionState === 'not-collected';
     const count = c.pageCategoryTotal === undefined ? c.products.length : c.pageCategoryTotal;
     const countText = count > c.products.length ? `本页 ${c.products.length} / 共 ${count} 款` : `${count} 款`;
-    const reason = deferred ? (c.reason || c.entryReason) : null;
+    const reason = c.pick?.reason || (deferred ? (c.reason || c.entryReason) : null);
     const body = c.products.length ? c.products.map(p => productRow(p, c)).join('')
       : deferred ? '' : `<p class="no-picks">${esc(c.reason || '当前筛选下没有符合条件的商品')}</p>`;
     return `<article class="cat tier-${METER[c.tier]}" data-category="${esc(c.id)}">
-      <header class="cat-head"><div class="cat-title"><h3>${esc(c.name)}</h3><a class="cat-amazon-link" href="${esc(c.url)}" target="_blank" rel="noopener noreferrer" title="在 Amazon 查看此小类" aria-label="在 Amazon 新标签页打开${esc(c.name)}小类"><span aria-hidden="true">↗</span></a>${count ? `<span class="cat-count">${countText}</span>` : deferred ? '<span class="cat-count">未采商品</span>' : ''}</div></header>
+      <header class="cat-head"><div class="cat-title"><h3>${c.pick ? `<span class="rank-no">#${c.pick.rank}</span> ${esc(c.pick.direction)}` : esc(c.name)}</h3><a class="cat-amazon-link" href="${esc(c.url)}" target="_blank" rel="noopener noreferrer" title="在 Amazon 查看此小类" aria-label="在 Amazon 新标签页打开${esc(c.name)}小类"><span aria-hidden="true">↗</span></a>${c.pick ? `<button class="link-btn" data-browse="${esc(c.id)}">查看小类 · ${esc(c.name)}</button>` : count ? `<span class="cat-count">${countText}</span>` : deferred ? '<span class="cat-count">未采商品</span>' : ''}</div></header>
       ${reason ? `<p class="cat-reason">${esc(reason)}</p>` : ''}
       ${deferred ? '' : `<div class="signals"><span>第4名月销 ${fourthText(c)}</span><span>全年高低月差 ${spreadText(c)}</span>
         <button class="link-btn" data-expand="${esc(c.id)}" aria-expanded="${ex}">${ex ? '收起走势' : '走势与依据'}</button></div>
-      ${ex ? evidencePanel(c) : ''}`}
+      ${ex ? evidencePanel(c) + relatedProducts(c) : ''}`}
       ${body ? `<div class="plist">${body}</div>` : ''}</article>`;
+  }
+  function relatedProducts(c) {
+    const related = (c.pick?.relatedAsins || []).map(id => productIndex.get(id)).filter(hit => hit?.p.pkg.status === 'pass');
+    if (!related.length) return '';
+    return `<div class="entry-basis"><b>合并的同方向商品</b>${related.map(({p, c: category}) => `<p><a href="${esc(p.productUrl)}" target="_blank" rel="noopener noreferrer">${esc(p.name)}</a> · ${esc(category.name)}</p>`).join('')}</div>`;
   }
   async function toggleEvidence(id) {
     if (state.evidence.has(id)) state.evidence.delete(id);
@@ -347,7 +373,7 @@
     if (card && c) { card.outerHTML = categoryCard(c); requestAnimationFrame(drawCharts); }
   }
   function refreshSavedButtons() {
-    $('savedCount').textContent = saved.length;
+    $('savedCount').textContent = savedItems().length;
     document.querySelectorAll('[data-save]').forEach(button => {
       const on = isSaved(button.dataset.save);
       button.classList.toggle('on', on); button.setAttribute('aria-pressed', String(on));
@@ -355,20 +381,9 @@
     });
   }
   function emptyState(v) {
-    if (data.mode === 'collected' && state.tier === '不推荐' && data.coverage.grade3Deferred > 0 && !data.categories.some(c => c.tier === '不推荐')) return `<div class="empty"><h3>第三档本轮暂未采集</h3><p>${esc(data.coverage.grade3Deferred)} 个小类留待后续</p></div>`;
-    const f = state.filters;
-    if (state.tier === '不推荐') return '<div class="empty"><h3>当前搜索下没有小类</h3><button class="btn ghost" id="reset">清除筛选</button></div>';
-    if (v.pool.length && !v.results.length) {
-      return `<div class="empty"><h3>这个类目下没有符合条件的商品</h3><button class="btn" data-node="__root__">返回全部类目</button></div>`;
-    }
-    // counts by size bucket with other filters unchanged, to make 0-result API samples navigable
-    const alt = ['pass', 'fail', 'unknown', 'all'].map(size => {
-      const n = C.filterCategories(data.categories, { ...f, size }).filter(c => c.tier === state.tier).reduce((s, c) => s + c.products.length, 0);
-      return { size, n };
-    });
-    const label = { pass: '符合尺寸', fail: '超出尺寸', unknown: '待补尺寸', all: '全部尺寸' };
-    const quick = alt.filter(a => a.size !== f.size && a.n > 0).map(a => `<button class="btn" data-size="${a.size}">${label[a.size]} ${a.n}</button>`).join('');
-    return `<div class="empty"><h3>当前筛选下没有商品</h3>${quick ? `<div class="quick">${quick}</div>` : ''}<button class="btn ghost" id="reset">清除筛选</button></div>`;
+    if (state.tier === TOP && rankingError) return `<div class="empty">${rankingError}</div>`;
+    if (v.pool.length && !v.results.length) return '<div class="empty"><h3>这个类目没有匹配结果</h3><button class="btn" data-node="__root__">返回全部类目</button></div>';
+    return '<div class="empty"><h3>当前筛选下没有匹配结果</h3><button class="btn ghost" id="reset">清除筛选</button></div>';
   }
   function pagerHtml(v) {
     const p = v.pagination;
@@ -380,6 +395,22 @@
   }
   function renderList(v) {
     if (!v.results.length) { $('list').innerHTML = emptyState(v); return; }
+    if (v.unitIsCat) {
+      const meanings = [
+        ['燃油或排气', '燃油与排气件需专门适配'],
+        ['制动系统', '需专门供应链的制动件'],
+        ['液体、化学', '液体、化学养护与涂料'],
+        ['涉及转向', '转向、承载与乘员防护'],
+      ];
+      const groups = new Map();
+      for (const c of v.results) {
+        const label = meanings.find(([prefix]) => c.reason?.startsWith(prefix))?.[1] || '原分档原因待核';
+        if (!groups.has(label)) groups.set(label, []);
+        groups.get(label).push(c);
+      }
+      $('list').innerHTML = [...groups].map(([label, cats]) => `<details class="deferred-group"><summary>${esc(label)}</summary><ul>${cats.map(c => `<li><a href="${esc(c.url)}" target="_blank" rel="noopener noreferrer">${esc(c.name)}</a></li>`).join('')}</ul></details>`).join('');
+      return;
+    }
     let prev = null;
     const groupKey = c => c.path.slice(1, -1).map(n => n.name).join(' › ') || '汽配';
     const groups = new Map();
@@ -387,7 +418,7 @@
     const pager = pagerHtml(v);
     $('list').innerHTML = pager + v.pagination.items.map(c => {
       let head = '';
-      if (state.sort === 'default') {
+      if (state.sort === 'default' && state.tier !== TOP) {
         const key = groupKey(c);
         if (key !== prev) head = `<h2 class="group">${esc(key)}<small>${groups.get(key)} 个小类</small></h2>`;
         prev = key;
@@ -404,10 +435,11 @@
     const v = view();
     renderTiers(v); renderTree(v); crumbs(v); renderList(v);
     $('sellerFilter').value = state.filters.seller; $('fulfillFilter').value = state.filters.fulfillment;
-    $('sizeFilter').value = state.filters.size; $('sort').value = state.sort;
-    for (const id of ['sellerFilter', 'fulfillFilter', 'sizeFilter']) $(id).disabled = v.unitIsCat;
+    $('sort').hidden = state.tier === TOP || v.unitIsCat;
+    $('sort').value = state.sort;
+    for (const id of ['sellerFilter', 'fulfillFilter']) $(id).disabled = v.unitIsCat;
     if ($('search').value.trim() !== state.filters.query) $('search').value = state.filters.query;
-    $('savedCount').textContent = saved.length;
+    $('savedCount').textContent = savedItems().length;
     requestAnimationFrame(drawCharts);
   }
 
@@ -495,7 +527,7 @@
     } catch (e) {
       console.error(e);
       const p = document.createElement('p'); p.className = 'export-error'; p.textContent = '导出失败，请重试'; $('savedList').prepend(p);
-    } finally { button.disabled = !saved.length; button.textContent = '下载 Excel'; }
+    } finally { button.disabled = !savedItems().length; button.textContent = '下载 Excel'; }
   }
 
   // ---------------- events ----------------
@@ -507,14 +539,22 @@
         if (!state.filters.query.trim()) { state.open.has(id) ? state.open.delete(id) : state.open.add(id); renderTree(view()); focusRow(id); }
  return;
       }
-      const t = e.target.closest('[data-node],[data-tier],[data-expand],[data-save],[data-remove],[data-size],[data-norm],[data-page],#reset,#resetAll,#treeToggle');
+      const t = e.target.closest('[data-node],[data-tier],[data-expand],[data-save],[data-remove],[data-browse],[data-norm],[data-page],#reset,#resetAll,#treeToggle');
       if (!t) return;
       if (t.dataset.node !== undefined) selectNode(t.dataset.node, !!t.closest('#tree'));
       else if (t.dataset.tier) { state.tier = t.dataset.tier; state.node = '__root__'; render(); }
       else if (t.dataset.expand) { toggleEvidence(t.dataset.expand); }
       else if (t.dataset.save) { toggleSaved(t.dataset.save, t.dataset.cat); refreshSavedButtons(); }
       else if (t.dataset.remove) { saved = saved.filter(s => s.id !== t.dataset.remove); persistSaved(); savedRender(); refreshSavedButtons(); }
-      else if (t.dataset.size) { state.filters.size = t.dataset.size; render(); }
+      else if (t.dataset.browse) {
+        const category = data.categories.find(c => c.id === t.dataset.browse);
+        if (category) {
+          state.tier = category.tier;
+          state.filters = { ...C.DEFAULT_FILTERS };
+          selectNode(category.id, false);
+          document.querySelector('.resultbar').scrollIntoView({ block: 'start' });
+        }
+      }
       else if (t.dataset.page !== undefined) { goPage(t.dataset.page); }
       else if (t.dataset.norm !== undefined) { state.chartNorm = t.dataset.norm === "1"; render(); }
       else if (t.id === 'reset' || t.id === 'resetAll') { state.filters = { ...C.DEFAULT_FILTERS }; state.node = '__root__'; render(); }
@@ -523,7 +563,6 @@
     $('tree').addEventListener('keydown', onTreeKey);
     $('sellerFilter').onchange = e => { state.filters.seller = e.target.value; render(); };
     $('fulfillFilter').onchange = e => { state.filters.fulfillment = e.target.value; render(); };
-    $('sizeFilter').onchange = e => { state.filters.size = e.target.value; render(); };
     $('sort').onchange = e => { state.sort = e.target.value; render(); };
     let searchTimer;
     $('search').addEventListener('input', e => { state.filters.query = e.target.value.trim(); clearTimeout(searchTimer); searchTimer = setTimeout(render, 150); });
@@ -540,7 +579,9 @@
   }
 
   loadData().then(d => {
-    data = d; indexData(); saved = loadSaved(); renderMode(); bind(); render();
+    data = d;
+    if (d.mode === 'collected') state.tier = TOP;
+    indexData(); saved = loadSaved(); renderMode(); bind(); render();
     document.body.dataset.mode = data.mode;
     window.__scout = { data, tree, state, saved: () => saved, render };
   });
