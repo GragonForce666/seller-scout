@@ -1,8 +1,23 @@
 {
-  "dataAsOf": "2026-11-11",
-  "categories": 785,
-  "products": 3434,
-  "files": 362,
-  "bytes": 17505907,
-  "source": "Adopted ui/ static app; no raw captures, credentials or agent logs"
+  "dataAsOf": "2026-11-17",
+  "categories": 247,
+  "products": 1981,
+  "files": 367,
+  "bytes": 25864264,
+  "source": "Adopted ui/ static app; no raw captures, credentials or agent logs",
+  "coverage": {
+    "completed": 1615,
+    "target": 1615,
+    "incomplete": 0,
+    "qualifiedCategories": 247,
+    "withFourth": 223,
+    "scopeExcluded": 7,
+    "headsCompleted": 247,
+    "sizes": {
+      "pass": 1981,
+      "fail": 160,
+      "unknown": 482
+    },
+    "cachedPackagesAdded": 0
+  }
 }

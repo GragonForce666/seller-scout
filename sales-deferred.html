@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SellerScout · 汽配选品</title>
+<style>
+:root{
+  --ink:#17191d;--ink2:#3b3f47;--muted:#686d76;--faint:#6a6e76;
+  --canvas:#f4f3ef;--card:#fff;--line:#e5e2db;--line2:#d8d4ca;--hover:#f1efe9;
+  --band:#17191d;--band2:#23262c;--band3:#30343b;--bandtext:#e9e7e1;--bandmuted:#a3a8b0;
+  --amber:#f2b01e;--amber-soft:#fff3d1;--amber-ink:#7a5300;
+  --pass:#0b6b4f;--pass-bg:#e5f3ec;--fail:#a3271b;--fail-bg:#fcebe8;
+  --radius:12px;--font:"Segoe UI","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--canvas);color:var(--ink);font:14px/1.55 var(--font);font-variant-numeric:tabular-nums}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px;border-radius:6px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ---------- top band ---------- */
+.band{background:var(--band);color:var(--bandtext)}
+.band :focus-visible{outline-color:var(--amber)}
+.band-in{max-width:1440px;margin:0 auto;padding:0 28px}
+.topline{display:flex;align-items:center;gap:18px;height:64px}
+.brand{font-weight:750;font-size:17px;letter-spacing:.3px;display:flex;align-items:baseline;gap:12px;white-space:nowrap}
+.brand small{font-weight:400;font-size:13px;color:var(--bandmuted);letter-spacing:0}
+.mode{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--bandmuted);border:1px solid var(--band3);border-radius:999px;padding:4px 12px;white-space:nowrap}
+.mode a{color:var(--amber);text-decoration:none;border-left:1px solid var(--band3);padding-left:8px}
+.mode a:hover{text-decoration:underline}
+.mode-dot{width:7px;height:7px;border-radius:50%;background:var(--amber)}
+.mode-dot.mode-collected,.mode-dot.mode-api-sample,.mode-dot.mode-cache{background:#5cc79a}
+.mode-note{color:#f0c46a}
+.saved-btn{display:flex;align-items:center;gap:8px;background:var(--amber);color:var(--ink);border:0;border-radius:8px;padding:8px 14px;font-weight:650;white-space:nowrap}
+.saved-btn:hover{background:#ffc23d}
+.saved-btn b{background:var(--ink);color:var(--amber);border-radius:999px;min-width:22px;padding:0 6px;font-size:12px;line-height:20px;text-align:center}
+.rules{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;padding:2px 0 18px;font-size:12px;color:var(--bandmuted)}
+.rules span{background:var(--band2);border:1px solid var(--band3);border-radius:6px;padding:3px 9px;color:var(--bandtext)}
+.rules .pref{background:transparent;border-style:dashed;color:var(--bandmuted)}
+.tiers{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.tier{position:relative;text-align:left;background:var(--band2);border:1px solid var(--band3);border-bottom:0;border-radius:12px 12px 0 0;padding:14px 18px 16px;color:var(--bandtext);display:grid;gap:4px}
+.tier:hover{background:#2a2e35}
+.tier.active{background:var(--canvas);color:var(--ink);border-color:var(--canvas)}
+.tier-top{display:flex;align-items:center;gap:10px}
+.tier strong{font-size:17px;font-weight:700}
+.meter{display:inline-flex;gap:3px}
+.meter i{width:9px;height:9px;border-radius:50%;border:1.5px solid currentColor;opacity:.55}
+.meter i.on{background:currentColor;opacity:1}
+.tier.active .meter i.on{background:var(--amber);border-color:#c98a0b}
+.tier-num{font-size:13px;color:var(--bandmuted)}
+.tier-num b{font-size:20px;font-weight:700;color:var(--bandtext);margin-right:3px}
+.tier-num .sep{margin:0 8px;opacity:.5}
+.tier.active .tier-num{color:var(--muted)}
+.tier.active .tier-num b{color:var(--ink)}
+.tier-desc{font-size:12px;color:var(--bandmuted)}
+.tier.active .tier-desc{color:var(--muted)}
+
+/* ---------- layout ---------- */
+main{max-width:1440px;margin:0 auto;padding:22px 28px 48px;display:grid;grid-template-columns:268px minmax(0,1fr);gap:22px;align-items:start}
+.tree-panel{position:sticky;top:16px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);display:flex;flex-direction:column;max-height:calc(100vh - 32px)}
+.tree-head{display:flex;justify-content:space-between;align-items:center;padding:12px 14px 8px;font-size:12px;color:var(--faint);border-bottom:1px solid var(--line)}
+.tree-head b{color:var(--ink2);font-size:13px}
+#tree{list-style:none;margin:0;padding:6px;overflow:auto;flex:1;min-height:0}
+#tree ul{list-style:none;margin:0;padding:0}
+.trow{display:flex;align-items:center;gap:4px;min-height:32px;padding:4px 8px 4px calc(var(--lv) * 13px - 8px);border-radius:7px;cursor:pointer;color:var(--ink2);user-select:none}
+.trow:hover{background:var(--hover)}
+.trow.root{font-weight:650;color:var(--ink)}
+.trow.trail .tname{font-weight:650;color:var(--ink)}
+.trow.sel{background:var(--amber-soft);color:var(--ink);box-shadow:inset 3px 0 0 var(--amber)}
+.trow.sel .tname{font-weight:700}
+.trow:focus-visible{outline-offset:-2px}
+.caret{flex:0 0 20px;height:20px;display:grid;place-items:center;border-radius:5px}
+.caret::before{content:"";width:6px;height:6px;border-right:1.6px solid var(--faint);border-bottom:1.6px solid var(--faint);transform:rotate(-45deg);transition:transform .12s}
+.trow[aria-expanded="true"] > .caret::before{transform:rotate(45deg) translate(-1px,-1px)}
+.caret:hover{background:#e6e3db}
+.caret.none::before{content:none}
+.tlabel{flex:1;min-width:0;line-height:1.35;padding:3px 0}
+.tpre{color:var(--faint);font-size:12px}
+.tcount{font-size:12px;color:var(--muted);min-width:22px;text-align:right}
+.tcount.zero{color:var(--faint)}
+.trow.sel .tcount{color:var(--ink);font-weight:650}
+.tree-toggle{display:none}
+
+/* ---------- toolbar ---------- */
+.toolbar{display:grid;grid-template-columns:minmax(220px,1fr) repeat(3,auto);gap:8px;margin-bottom:12px}
+.search{position:relative}
+.search::before{content:"";position:absolute;left:12px;top:50%;width:11px;height:11px;border:1.8px solid var(--faint);border-radius:50%;transform:translateY(-62%)}
+.search::after{content:"";position:absolute;left:22px;top:58%;width:6px;height:1.8px;background:var(--faint);transform:rotate(45deg)}
+.toolbar input,.toolbar select{width:100%;height:40px;border:1px solid var(--line2);border-radius:8px;background:var(--card);padding:0 12px;font-size:13px;color:var(--ink)}
+.toolbar input{padding-left:34px}
+.toolbar select{min-width:132px;padding-right:28px;appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 15px) 52%,calc(100% - 10px) 52%;background-size:5px 5px;background-repeat:no-repeat}
+.toolbar select:hover,.toolbar input:hover{border-color:#bfb9ad}
+.resultbar{display:flex;align-items:center;gap:12px;min-height:34px;margin-bottom:10px;flex-wrap:wrap}
+.crumbs{display:flex;align-items:center;flex-wrap:wrap;gap:2px;font-size:13px;min-width:0}
+.crumb{border:0;background:none;padding:3px 5px;border-radius:5px;color:var(--muted)}
+button.crumb:hover{background:#e9e6df;color:var(--ink)}
+.crumb.cur{color:var(--ink);font-weight:650}
+.crumb-sep{color:#b2b5ba}
+.count{margin-left:auto;font-size:13px;color:var(--muted);white-space:nowrap}
+.count b{color:var(--ink)}
+.reset-all{border:0;background:none;color:var(--ink);text-decoration:underline;text-underline-offset:3px;font-size:13px;padding:3px 4px}
+
+/* ---------- list ---------- */
+.group{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;font-weight:650;color:var(--ink2);margin:22px 2px 8px}
+.group:first-child{margin-top:4px}
+.group small{font-weight:400;color:var(--faint)}
+.cat{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);margin-bottom:12px;overflow:hidden}
+.cat-head{display:flex;align-items:center;gap:12px;padding:16px 20px 4px}
+.cat-title{display:flex;align-items:baseline;gap:10px;min-width:0;flex:1}
+.cat-title h3{margin:0;font-size:18px;line-height:1.3;font-weight:700}
+.cat-amazon-link{display:inline-flex;align-items:center;justify-content:center;flex:none;width:26px;height:26px;font-size:15px;color:var(--muted);text-decoration:none;border-radius:5px}
+.cat-amazon-link:hover{color:var(--ink);background:var(--line)}
+.cat-amazon-link:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.cat-count{font-size:12px;color:var(--muted);white-space:nowrap}
+.ext{font-size:12px;color:var(--ink2);text-decoration:underline;text-decoration-color:var(--line2);text-underline-offset:3px;white-space:nowrap}
+.ext:hover{text-decoration-color:var(--ink)}
+.signals{display:flex;align-items:center;flex-wrap:wrap;gap:6px 22px;padding:2px 20px 12px;font-size:12.5px;color:var(--muted);border-bottom:1px solid var(--line)}
+.signals b{color:var(--ink);font-weight:650;margin-left:4px}
+.signals b.muted{color:var(--muted);font-weight:500}
+.pill{display:inline-block;font-size:11px;border-radius:999px;padding:0 7px;margin-left:6px;line-height:18px}
+.pill.ok{background:var(--pass-bg);color:var(--pass)}
+.pill.warn{background:var(--amber-soft);color:var(--amber-ink)}
+.link-btn{margin-left:auto;border:1px solid var(--line2);background:var(--card);border-radius:7px;padding:3px 10px;font-size:12px;color:var(--ink2)}
+.link-btn:hover{background:var(--hover)}
+.link-btn[aria-expanded="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.plist{padding:0 20px}
+.no-picks{margin:0;padding:16px 0;color:var(--muted);font-size:13px}
+
+.product{display:grid;grid-template-columns:112px minmax(220px,1fr) auto 104px;gap:18px;align-items:center;padding:16px 0;border-bottom:1px solid var(--line)}
+.product:last-child{border-bottom:0}
+.pimg{display:block;width:112px;height:112px;border-radius:10px;border:1px solid var(--line);background:#fff;overflow:hidden;position:relative}
+.pimg img{width:100%;height:100%;object-fit:contain;display:block}
+a.pimg:hover{border-color:var(--ink2);box-shadow:0 4px 14px rgba(23,25,29,.08)}
+a.pimg::after{content:"↗";position:absolute;right:5px;bottom:4px;font-size:11px;line-height:16px;width:18px;text-align:center;border-radius:5px;background:rgba(23,25,29,.75);color:#fff;opacity:0;transition:opacity .12s}
+a.pimg:hover::after,a.pimg:focus-visible::after{opacity:1}
+.noimg{display:grid;place-items:center;width:100%;height:100%;font-size:12px;color:var(--faint);background:#faf9f6}
+.pinfo{min-width:0}
+.ptitle{font-size:15px;font-weight:650;line-height:1.4;color:var(--ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.phl{font-size:12.5px;color:var(--muted);margin-top:3px}
+.phl span+span::before{content:" · ";color:#b5b8bd}
+.pmeta{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.tag{font-size:11px;font-weight:600;letter-spacing:.3px;border:1px solid var(--line2);border-radius:5px;padding:0 6px;line-height:19px;color:var(--ink2);background:#fff}
+.tag.vc{background:var(--ink);border-color:var(--ink);color:#fff}
+.tag.unknown{border-style:dashed;color:var(--muted);font-weight:500}
+.tag.pending{border-color:#e7c46d;color:var(--amber-ink);background:var(--amber-soft)}
+.pkg{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin-top:8px;font-size:12px;color:var(--muted)}
+.pkg-dims b{color:var(--ink2);font-weight:650}
+.pkg .dot{margin:0 5px;color:#b5b8bd}
+.pkg-badge{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:650;border-radius:5px;padding:0 7px 0 5px;line-height:20px}
+.pkg-badge i{font-style:normal;font-size:11px}
+.pkg-badge.pass{background:var(--pass-bg);color:var(--pass)}
+.pkg-badge.fail{background:var(--fail-bg);color:var(--fail)}
+.pkg-badge.unknown{background:#f1f0ec;color:#55595f;outline:1px dashed #b9b6ad;outline-offset:-1px}
+.metrics{display:grid;grid-template-columns:96px 72px 92px 56px 76px;gap:14px}
+.metric small{display:block;font-size:11.5px;color:var(--faint);margin-bottom:2px;white-space:nowrap}
+.metric b{display:block;font-size:16px;font-weight:650;white-space:nowrap;color:var(--ink)}
+.metric.price b{font-size:18px;font-weight:750}
+.metric.date b{font-size:14px;font-weight:600;padding-top:2px}
+.save{justify-self:end;border:1px solid var(--ink);background:#fff;color:var(--ink);border-radius:8px;padding:7px 12px;font-size:13px;font-weight:600;white-space:nowrap}
+.save:hover{background:var(--hover)}
+.save.on{background:var(--amber);border-color:#c98a0b}
+.save.on:hover{background:#ffc23d}
+
+/* evidence */
+.evidence{display:grid;grid-template-columns:260px minmax(0,1fr);gap:18px;padding:16px 20px;background:#faf9f6;border-bottom:1px solid var(--line)}
+.fourth{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;align-self:start}
+.fourth small{font-size:12px;color:var(--muted)}
+.fourth strong{display:block;font-size:32px;font-weight:750;line-height:1.2;margin:6px 0 4px}
+.fourth strong span{font-size:13px;font-weight:400;color:var(--muted);margin-left:4px}
+.fourth p{margin:0 0 8px;font-size:12px;color:var(--ink2)}
+.trend{min-width:0}
+.trend-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--ink2)}
+.lg i{display:inline-block;width:20px;height:0;border-top:2px solid;vertical-align:middle;margin-right:5px}
+.lg0 i{border-color:#22262d}.lg1 i{border-color:#c98a0b;border-top-style:dashed}.lg2 i{border-color:#6f7f9e;border-top-style:dotted}
+canvas{display:block;width:100%;height:168px;margin-top:6px}
+.trendtip{font-size:12px;color:var(--ink2);min-height:20px}
+.nodata{color:var(--muted);font-size:13px}
+.mtable{font-size:12px;color:var(--muted);margin-top:4px}
+.mtable summary{cursor:pointer;padding:2px 0}
+.tablewrap{overflow:auto}
+.mtable table{border-collapse:collapse;width:100%;margin-top:6px;text-align:right;color:var(--ink2)}
+.mtable th,.mtable td{padding:4px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
+.mtable th[scope=row]{text-align:left}
+.mtable th small{display:block;color:var(--faint);font-weight:400}
+.mtable td.sp{font-weight:650;color:var(--ink)}
+.mtable tr.max th,.mtable tr.max td{background:var(--amber-soft)}
+.signals .sub{margin-left:8px;color:var(--muted);font-weight:500}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:7px;overflow:hidden}
+.seg button{border:0;background:#fff;padding:2px 10px;font-size:12px;color:var(--ink2)}
+.seg button+button{border-left:1px solid var(--line2)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:#fff}
+.top3{margin:6px 0 0;font-size:12px;color:var(--ink2)}
+.rankdet{font-size:12px;margin:0 0 8px;color:var(--muted)}
+.rankdet summary{cursor:pointer;padding:2px 0}
+.rankdet table{border-collapse:collapse;width:100%;margin-top:4px;color:var(--ink2)}
+.rankdet th,.rankdet td{text-align:left;padding:3px 6px 3px 0;font-size:11.5px;border-bottom:1px solid var(--line);white-space:nowrap;font-weight:400}
+.rankdet tr.used td{font-weight:650;color:var(--ink)}
+.rankdet a{color:inherit}
+
+.empty{background:var(--card);border:1px dashed var(--line2);border-radius:var(--radius);padding:56px 20px;text-align:center}
+.empty h3{margin:0 0 16px;font-size:16px}
+.quick{display:flex;justify-content:center;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.btn{border:1px solid var(--line2);background:#fff;border-radius:8px;padding:7px 14px;font-size:13px}
+.btn:hover{background:var(--hover)}
+.btn.ghost{border-color:transparent;text-decoration:underline;text-underline-offset:3px}
+.btn.small{padding:4px 10px;font-size:12px}
+.btn.primary{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:600}
+.btn.primary:hover{background:#2c3038}
+.btn:disabled{opacity:.4;cursor:default}
+.foot{max-width:1440px;margin:0 auto;padding:0 28px 32px;font-size:12px;color:var(--faint)}
+
+/* dialog */
+dialog{border:0;border-radius:14px;padding:0;width:min(1180px,94vw);max-height:88vh;color:var(--ink);box-shadow:0 30px 90px rgba(23,25,29,.3)}
+dialog::backdrop{background:rgba(23,25,29,.55)}
+.dlg-head{position:sticky;top:0;z-index:1;display:flex;align-items:center;gap:12px;padding:18px 22px;background:#fff;border-bottom:1px solid var(--line)}
+.dlg-head h2{margin:0;font-size:18px;flex:1}
+.dlg-head small{font-size:13px;font-weight:400;color:var(--muted);margin-left:8px}
+.dlg-body{padding:6px 22px 22px}
+.savedtable{border-collapse:collapse;width:100%;min-width:960px;font-size:13px}
+.savedtable th{text-align:left;font-size:12px;font-weight:500;color:var(--muted);padding:10px 8px;border-bottom:1px solid var(--line2)}
+.savedtable td{padding:12px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+.savedtable img,.savedtable .noimg{width:72px;height:72px;object-fit:contain;border:1px solid var(--line);border-radius:8px;display:block}
+.savedtable .stitle{min-width:220px;max-width:300px}
+.savedtable .stitle p{margin:4px 0 0;font-size:12px;color:var(--muted)}
+.savedtable .num{white-space:nowrap}
+.savedtable .pkg{margin-top:0}
+.savedtable tr.stale td{opacity:.7}
+.saved-empty{padding:48px 20px;text-align:center;color:var(--muted)}
+.export-error{color:var(--fail);font-size:12px}
+
+/* ---------- responsive ---------- */
+@media (max-width:1320px){
+  .product{grid-template-columns:96px minmax(0,1fr) 96px;grid-template-areas:"img info save" "img metrics metrics";row-gap:10px}
+  .pimg{grid-area:img;width:96px;height:96px;align-self:start}
+  .pinfo{grid-area:info}.metrics{grid-area:metrics}.save{grid-area:save;align-self:start}
+  .metrics{grid-template-columns:repeat(5,minmax(0,max-content));gap:6px 22px}
+}
+@media (max-width:1100px){
+  main{grid-template-columns:228px minmax(0,1fr);gap:16px;padding:18px 18px 40px}
+  .band-in,.foot{padding-left:18px;padding-right:18px}
+  .toolbar{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .toolbar .search{grid-column:1/-1}
+  .toolbar select{min-width:0}
+}
+@media (max-width:860px){
+  main{display:block}
+  .tree-panel{position:static;max-height:none;margin-bottom:12px}
+  .tree-toggle{display:flex;align-items:center;gap:6px;width:100%;border:0;background:none;padding:12px 14px;text-align:left;font-size:14px}
+  .tree-toggle b{font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tt-caret{margin-left:auto;width:7px;height:7px;border-right:1.6px solid var(--muted);border-bottom:1.6px solid var(--muted);transform:rotate(45deg)}
+  .tree-toggle[aria-expanded="true"] .tt-caret{transform:rotate(-135deg)}
+  .tree-head,#tree{display:none}
+  .tree-panel.open .tree-head{display:flex;border-top:1px solid var(--line)}
+  .tree-panel.open #tree{display:block;max-height:60vh}
+  .tier-desc{display:none}
+  .tier{padding:10px 12px 12px}
+  .tier strong{font-size:15px}
+  .tier-num b{font-size:17px}
+  .rules{padding-bottom:14px}
+}
+@media (max-width:600px){
+  .topline{height:auto;padding:12px 0;flex-wrap:wrap;gap:10px}
+  .brand small{display:none}
+  .mode{order:3;margin-left:0;width:100%;justify-content:flex-start;flex-wrap:wrap;white-space:normal}
+  .saved-btn{margin-left:auto}
+  .tiers{gap:6px;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .tier{padding:9px 10px 11px}
+  .tier-top{gap:4px;flex-direction:column;align-items:flex-start}
+  .tier strong{font-size:14px;white-space:nowrap}
+  .rules{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:12px}
+  .rules span{white-space:nowrap}
+  .tier-num .sep{margin:0 4px}
+  .toolbar{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cat-head,.signals,.plist{padding-left:14px;padding-right:14px}
+  .cat-head{flex-wrap:wrap;row-gap:2px}
+  .link-btn{margin-left:0}
+  .product{grid-template-columns:76px minmax(0,1fr);grid-template-areas:"img info" "metrics metrics" "save save";gap:10px 12px}
+  .pimg{width:76px;height:76px}
+  .metrics{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 12px;background:#faf9f6;border-radius:8px;padding:8px 10px}
+  .metric b{font-size:15px}.metric.price b{font-size:16px}
+  .save{justify-self:stretch}
+  .evidence{grid-template-columns:1fr;padding:14px}
+  .count{margin-left:0}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.entry-basis{padding:12px 20px;background:var(--canvas);font-size:13px;line-height:1.7;color:var(--muted)}.entry-basis p{margin:4px 0 0}
+.cat-reason{margin:0;padding:0 20px 12px;color:var(--muted);font-size:13px;line-height:1.65}
+.purpose-note{margin:6px 0;color:#855d15;font-size:12px;line-height:1.5}
+.list-pager{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:16px 0;font-size:13px;color:var(--muted)}
+.list-pager>div{display:flex;gap:8px;align-items:center}.list-pager select{padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink)}
+.list-pager button:disabled{opacity:.4;cursor:default}.resultbar{scroll-margin-top:170px}
+@media(max-width:600px){.cat-reason{padding-left:14px;padding-right:14px}.list-pager{flex-wrap:wrap;justify-content:center}.list-pager>span{width:100%;text-align:center}.resultbar{scroll-margin-top:20px}}
+.no-counts .tcount{display:none}
+.deferred-group{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:12px 16px;margin-bottom:8px}
+.deferred-group summary,.package-detail summary{cursor:pointer}
+.deferred-group ul{columns:2;padding-left:22px}
+.deferred-group li{padding:4px;break-inside:avoid}
+.rank-no{color:var(--muted);font-variant-numeric:tabular-nums}
+.package-detail{font-size:12px;color:var(--muted)}
+@media(max-width:600px){.deferred-group ul{columns:1}}
+.rules input{width:5em;font:inherit;color:inherit;background:transparent;border:none;border-bottom:1px solid currentColor;color-scheme:dark}.rules input[aria-invalid=true]{outline:1px solid #e38773}
+.reading-preview main,.reading-preview #showSaved,.reading-preview #modeBadge{display:none}
+.tiers a.tier{text-decoration:none}#rank-preview{max-width:1080px;margin:auto;padding:20px}
+.static-pick{padding:14px;border-top:1px solid var(--line);display:flow-root}
+.static-pick img{object-fit:contain;float:left;margin-right:14px}.static-pick h3,.static-pick p{margin:4px}
+</style>
+</head>
+<body class="reading-preview">
+<div class="band"><div class="band-in">
+  <div class="topline">
+    <div class="brand">SellerScout<small>美国站 · 汽配选品</small></div>
+    <div class="mode" id="modeBadge" role="status"></div>
+    <button class="saved-btn" id="showSaved">我的备选 <b id="savedCount">0</b></button>
+  </div>
+  <div class="rules" aria-label="筛选条件"><span><label>最低售价 $ <input id="minPrice" readonly type="number" min="100" value="100" step="0.01" required></label></span><span><label>最低父体月销 <input id="minSales" readonly type="number" min="30" value="30" step="1" required> 件</label></span><span>上架半年内</span><span>包装最长≤48英寸 · 第二长≤30英寸 · 长+2×（宽+高）≤169英寸</span><span title="用户业务标记，不代表承运商实际费用">长+2×（宽+高）&gt;130英寸：oversize；&gt;108至130英寸：AHS</span><span class="pref">小类第 4 名月销 · 从低到高</span></div>
+  <nav class="tiers" id="tiers" aria-label="小类分档"><a class="tier" href="sales-all.html"><strong>全部合格</strong><span class="tier-num">1,981 款 · 247 小类</span></a><a class="tier" href="sales-recommended.html"><strong>推荐看</strong><span class="tier-num">123 款 · 17 小类</span></a><a class="tier" href="sales-consider.html"><strong>可以考虑</strong><span class="tier-num">1,858 款 · 230 小类</span></a><a class="tier active" href="sales-deferred.html"><strong>不推荐</strong><span class="tier-num">暂缓方向</span></a></nav>
+</div></div>
+
+<section id="rank-preview"><h2>不推荐</h2><p>2026-11-17 · 已查 1615 / 1615 个小类</p><p id="preview-status"></p><details class="deferred-group"><summary>原分档原因待核</summary><ul><li><a href="https://www.amazon.com/b?node=15735121">香水、空气清新</a></li><li><a href="https://www.amazon.com/b?node=38276428011">香薰扩散器</a></li><li><a href="https://www.amazon.com/b?node=15736701">赛车头盔和配件</a></li><li><a href="https://www.amazon.com/b?node=15736711">赛车座椅</a></li><li><a href="https://www.amazon.com/b?node=15736731">安全套件</a></li><li><a href="https://www.amazon.com/b?node=21571975011">清洁剂</a></li><li><a href="https://www.amazon.com/b?node=21571977011">清洗剂与车蜡</a></li><li><a href="https://www.amazon.com/b?node=21580671011">供气</a></li><li><a href="https://www.amazon.com/b?node=3147789011">暖气</a></li><li><a href="https://www.amazon.com/b?node=21590000011">炉灶</a></li><li><a href="https://www.amazon.com/b?node=10806179011">热水器恒温器，元件</a></li><li><a href="https://www.amazon.com/b?node=2504400011">热水器</a></li><li><a href="https://www.amazon.com/b?node=15709811">窗户</a></li><li><a href="https://www.amazon.com/b?node=15709841">前挡风</a></li><li><a href="https://www.amazon.com/b?node=404857011">农用拖拉机和农具</a></li><li><a href="https://www.amazon.com/b?node=353656011">卡丁和卡丁赛车</a></li><li><a href="https://www.amazon.com/b?node=10350135011">全季</a></li><li><a href="https://www.amazon.com/b?node=10350137011">全地形</a></li><li><a href="https://www.amazon.com/b?node=353634011">房车</a></li><li><a href="https://www.amazon.com/b?node=2054185011">性能型</a></li><li><a href="https://www.amazon.com/b?node=2054184011">旅行型轮胎</a></li><li><a href="https://www.amazon.com/b?node=2054186011">冬季</a></li><li><a href="https://www.amazon.com/b?node=7139058011">赛车</a></li><li><a href="https://www.amazon.com/b?node=404866011">牵引车</a></li></ul></details><details class="deferred-group"><summary>液体、化学养护与涂料</summary><ul><li><a href="https://www.amazon.com/b?node=15718281">洗车用品套组</a></li><li><a href="https://www.amazon.com/b?node=19351186011">虫子、树液和焦油去除剂</a></li><li><a href="https://www.amazon.com/b?node=15718311">镀铬件与金属抛光剂</a></li><li><a href="https://www.amazon.com/b?node=15718371">蜡</a></li><li><a href="https://www.amazon.com/b?node=15718451">清洁剂</a></li><li><a href="https://www.amazon.com/b?node=15718431">无水洗涤处理</a></li><li><a href="https://www.amazon.com/b?node=15718461">敞篷车顶清洁剂</a></li><li><a href="https://www.amazon.com/b?node=15718471">抛光研磨材料</a></li><li><a href="https://www.amazon.com/b?node=15718481">抛光</a></li><li><a href="https://www.amazon.com/b?node=15718921">胶粘剂</a></li><li><a href="https://www.amazon.com/b?node=3097823011">修补腻子</a></li><li><a href="https://www.amazon.com/b?node=15719581">密封垫修补剂</a></li><li><a href="https://www.amazon.com/b?node=15719601">散热器修补剂</a></li><li><a href="https://www.amazon.com/b?node=15719611">硅酮</a></li><li><a href="https://www.amazon.com/b?node=15719631">螺纹锁固胶</a></li><li><a href="https://www.amazon.com/b?node=15718531">玻璃清洁</a></li><li><a href="https://www.amazon.com/b?node=15718551">地毯清洁剂</a></li><li><a href="https://www.amazon.com/b?node=15718561">皮革护理</a></li><li><a href="https://www.amazon.com/b?node=15718581">塑料护理</a></li><li><a href="https://www.amazon.com/b?node=15718591">橡胶护理</a></li><li><a href="https://www.amazon.com/b?node=15718601">乙烯树脂护理</a></li><li><a href="https://www.amazon.com/b?node=15718611">室内装饰护理</a></li><li><a href="https://www.amazon.com/b?node=15718631">溶剂</a></li><li><a href="https://www.amazon.com/b?node=15718781">底层涂料</a></li><li><a href="https://www.amazon.com/b?node=219646390011">玻璃驱水涂层</a></li><li><a href="https://www.amazon.com/b?node=219646388011">车窗清洁剂</a></li><li><a href="https://www.amazon.com/b?node=219646389011">车窗清洁抛光剂</a></li><li><a href="https://www.amazon.com/b?node=15682257011">重型润滑脂和润滑剂</a></li><li><a href="https://www.amazon.com/b?node=15682258011">重型机油</a></li><li><a href="https://www.amazon.com/b?node=404704011">链条润滑剂</a></li><li><a href="https://www.amazon.com/b?node=404705011">摩托车发动机油</a></li><li><a href="https://www.amazon.com/b?node=404706011">齿轮油</a></li><li><a href="https://www.amazon.com/b?node=404655011">工具包</a></li><li><a href="https://www.amazon.com/b?node=21571978011">屋顶涂料</a></li><li><a href="https://www.amazon.com/b?node=212246120011">储水及污水箱清洁剂</a></li></ul></details><details class="deferred-group"><summary>燃油与排气件需专门适配</summary><ul><li><a href="https://www.amazon.com/b?node=15682256011">防冻液、冷却剂和柴油机排气液</a></li><li><a href="https://www.amazon.com/b?node=404758011">化油器</a></li><li><a href="https://www.amazon.com/b?node=404760011">燃油管路</a></li><li><a href="https://www.amazon.com/b?node=404762011">油箱盖</a></li><li><a href="https://www.amazon.com/b?node=404763011">摩托车油箱</a></li><li><a href="https://www.amazon.com/b?node=404761011">进气室</a></li><li><a href="https://www.amazon.com/b?node=404759011">化油器量孔及套件</a></li><li><a href="https://www.amazon.com/b?node=404764011">氧化亚氮加速套件</a></li><li><a href="https://www.amazon.com/b?node=404765011">油箱</a></li><li><a href="https://www.amazon.com/b?node=15712291">排放系统</a></li><li><a href="https://www.amazon.com/b?node=15714401">化油器</a></li><li><a href="https://www.amazon.com/b?node=15714481">垫圈</a></li><li><a href="https://www.amazon.com/b?node=15714511">化油器量孔</a></li><li><a href="https://www.amazon.com/b?node=15714521">连杆机构</a></li><li><a href="https://www.amazon.com/b?node=15714561">维修重建套件</a></li><li><a href="https://www.amazon.com/b?node=15714571">复位弹簧</a></li><li><a href="https://www.amazon.com/b?node=15714611">垫片</a></li><li><a href="https://www.amazon.com/b?node=346822011">配件</a></li><li><a href="https://www.amazon.com/b?node=15714641">燃油和水分离器</a></li><li><a href="https://www.amazon.com/b?node=15714741">燃油喷射器</a></li><li><a href="https://www.amazon.com/b?node=15714961">压力调节器</a></li><li><a href="https://www.amazon.com/b?node=15715031">节流阀控制</a></li><li><a href="https://www.amazon.com/b?node=15715181">电动燃油泵</a></li><li><a href="https://www.amazon.com/b?node=15715191">带滤网的过滤器</a></li><li><a href="https://www.amazon.com/b?node=318343011">瓶支架</a></li><li><a href="https://www.amazon.com/b?node=318341011">瓶组件</a></li><li><a href="https://www.amazon.com/b?node=318346011">瓶子</a></li><li><a href="https://www.amazon.com/b?node=318349011">氧化亚氮系统过滤器</a></li><li><a href="https://www.amazon.com/b?node=318352011">化油器量孔</a></li><li><a href="https://www.amazon.com/b?node=15715271">节流阀体</a></li><li><a href="https://www.amazon.com/b?node=15724951">进气管</a></li><li><a href="https://www.amazon.com/b?node=15724931">空气旁路阀</a></li><li><a href="https://www.amazon.com/b?node=15724941">空气止回阀</a></li><li><a href="https://www.amazon.com/b?node=15724961">空气泵止回阀</a></li><li><a href="https://www.amazon.com/b?node=15724981">碳罐清污阀</a></li><li><a href="https://www.amazon.com/b?node=15726741">催化转化器</a></li><li><a href="https://www.amazon.com/b?node=15726751">转换器空气管</a></li><li><a href="https://www.amazon.com/b?node=15726771">转换器零件</a></li><li><a href="https://www.amazon.com/b?node=15726791">止回阀</a></li><li><a href="https://www.amazon.com/b?node=15724991">控制单元</a></li><li><a href="https://www.amazon.com/b?node=15725011">分流阀</a></li><li><a href="https://www.amazon.com/b?node=15725031">EGR 阀垫圈</a></li><li><a href="https://www.amazon.com/b?node=15725041">EGR 真空电磁阀</a></li><li><a href="https://www.amazon.com/b?node=15725051">EGR阀</a></li><li><a href="https://www.amazon.com/b?node=15727051">排气涂料</a></li><li><a href="https://www.amazon.com/b?node=15727001">排气管</a></li><li><a href="https://www.amazon.com/b?node=19163108011">后桥段排气系统</a></li><li><a href="https://www.amazon.com/b?node=15726781">催化器后段排气系统</a></li><li><a href="https://www.amazon.com/b?node=19163109011">歧管后段排气系统</a></li><li><a href="https://www.amazon.com/b?node=15726821">延长管道</a></li><li><a href="https://www.amazon.com/b?node=15726841">排气管卡箍</a></li><li><a href="https://www.amazon.com/b?node=15726851">法兰</a></li><li><a href="https://www.amazon.com/b?node=15726861">吊钩零件</a></li><li><a href="https://www.amazon.com/b?node=15726871">排气管吊架</a></li><li><a href="https://www.amazon.com/b?node=15726891">排气歧管螺栓</a></li><li><a href="https://www.amazon.com/b?node=15726901">排气歧管密封垫</a></li><li><a href="https://www.amazon.com/b?node=15726911">排气头段歧管</a></li><li><a href="https://www.amazon.com/b?node=15726921">导热罩</a></li><li><a href="https://www.amazon.com/b?node=15726931">隔热板</a></li><li><a href="https://www.amazon.com/b?node=15726941">隔热带、隔热垫与套管</a></li><li><a href="https://www.amazon.com/b?node=15726961">螺栓和弹簧套件</a></li><li><a href="https://www.amazon.com/b?node=15726971">歧管</a></li><li><a href="https://www.amazon.com/b?node=15726981">螺柱和螺母</a></li><li><a href="https://www.amazon.com/b?node=15726991">消音器</a></li><li><a href="https://www.amazon.com/b?node=15725061">PCV 阀和呼吸器索环</a></li><li><a href="https://www.amazon.com/b?node=15727041">排气谐振消声器</a></li><li><a href="https://www.amazon.com/b?node=15725081">次级隔膜</a></li><li><a href="https://www.amazon.com/b?node=15725091">二次空气泵</a></li><li><a href="https://www.amazon.com/b?node=15725121">碗状通风口</a></li><li><a href="https://www.amazon.com/b?node=15725131">碳罐清污控制器</a></li><li><a href="https://www.amazon.com/b?node=15725141">怠速停止</a></li><li><a href="https://www.amazon.com/b?node=15725151">混合控制</a></li><li><a href="https://www.amazon.com/b?node=15725181">节气门排放控制</a></li><li><a href="https://www.amazon.com/b?node=15725191">火花延迟阀</a></li><li><a href="https://www.amazon.com/b?node=15725201">真空三通接头</a></li><li><a href="https://www.amazon.com/b?node=15725211">真空阀</a></li><li><a href="https://www.amazon.com/b?node=15725221">蒸汽罐</a></li><li><a href="https://www.amazon.com/b?node=15727341">加速器泵</a></li><li><a href="https://www.amazon.com/b?node=15727351">排气阀O形圈</a></li><li><a href="https://www.amazon.com/b?node=15727361">碗盖垫圈</a></li><li><a href="https://www.amazon.com/b?node=318329011">减震器顶盖</a></li><li><a href="https://www.amazon.com/b?node=15727371">化油器</a></li><li><a href="https://www.amazon.com/b?node=15727381">阻风门</a></li><li><a href="https://www.amazon.com/b?node=15727391">阻风门温控器</a></li><li><a href="https://www.amazon.com/b?node=15727401">减速阀隔膜</a></li><li><a href="https://www.amazon.com/b?node=15727411">隔膜</a></li><li><a href="https://www.amazon.com/b?node=15727421">电动辅助阻风门控制器</a></li><li><a href="https://www.amazon.com/b?node=15727431">电动阻风门改装套件</a></li><li><a href="https://www.amazon.com/b?node=15727441">浮子</a></li><li><a href="https://www.amazon.com/b?node=15727451">燃油入口维修配件和垫圈</a></li><li><a href="https://www.amazon.com/b?node=15727461">垫圈</a></li><li><a href="https://www.amazon.com/b?node=15727471">调速器隔膜</a></li><li><a href="https://www.amazon.com/b?node=15727481">热怠速补偿器</a></li><li><a href="https://www.amazon.com/b?node=15727491">化油器量孔</a></li><li><a href="https://www.amazon.com/b?node=15727501">连杆机构</a></li><li><a href="https://www.amazon.com/b?node=15727521">针座总成</a></li><li><a href="https://www.amazon.com/b?node=15727531">动力阀和垫圈</a></li><li><a href="https://www.amazon.com/b?node=15727541">维修重建套件</a></li><li><a href="https://www.amazon.com/b?node=15727551">复位弹簧</a></li><li><a href="https://www.amazon.com/b?node=15727561">自攻螺丝</a></li><li><a href="https://www.amazon.com/b?node=15727571">服务工具</a></li><li><a href="https://www.amazon.com/b?node=15727581">电磁阀</a></li><li><a href="https://www.amazon.com/b?node=15727591">垫片和配件</a></li><li><a href="https://www.amazon.com/b?node=15727601">节流球接头</a></li><li><a href="https://www.amazon.com/b?node=15727611">电子调速器</a></li><li><a href="https://www.amazon.com/b?node=346821011">配件</a></li><li><a href="https://www.amazon.com/b?node=15727621">燃油和水分离器</a></li><li><a href="https://www.amazon.com/b?node=15727641">适配器和连接器</a></li><li><a href="https://www.amazon.com/b?node=15727651">空气流量计</a></li><li><a href="https://www.amazon.com/b?node=15727661">辅助送风</a></li><li><a href="https://www.amazon.com/b?node=15727671">ECU</a></li><li><a href="https://www.amazon.com/b?node=15727681">燃油蓄压器</a></li><li><a href="https://www.amazon.com/b?node=15727691">燃油分配器</a></li><li><a href="https://www.amazon.com/b?node=15727701">燃油加热器</a></li><li><a href="https://www.amazon.com/b?node=15727731">喷油系统过滤器</a></li><li><a href="https://www.amazon.com/b?node=3097828011">喷油器套件</a></li><li><a href="https://www.amazon.com/b?node=15727741">喷油器</a></li><li><a href="https://www.amazon.com/b?node=15727751">密封套件</a></li><li><a href="https://www.amazon.com/b?node=15727761">垫圈</a></li><li><a href="https://www.amazon.com/b?node=15727771">隔热板</a></li><li><a href="https://www.amazon.com/b?node=15727781">触发器存放装置</a></li><li><a href="https://www.amazon.com/b?node=15727791">怠速空气控制阀</a></li><li><a href="https://www.amazon.com/b?node=15727801">怠速空气零件</a></li><li><a href="https://www.amazon.com/b?node=15727811">怠速控制</a></li><li><a href="https://www.amazon.com/b?node=15727831">怠速稳定器</a></li><li><a href="https://www.amazon.com/b?node=15727841">λ控制单元</a></li><li><a href="https://www.amazon.com/b?node=15727851">计量零件</a></li><li><a href="https://www.amazon.com/b?node=15727861">喷嘴夹持器</a></li><li><a href="https://www.amazon.com/b?node=15727871">喷嘴</a></li><li><a href="https://www.amazon.com/b?node=15727891">O 形圈和套件</a></li><li><a href="https://www.amazon.com/b?node=15727881">供油管线</a></li><li><a href="https://www.amazon.com/b?node=15727911">进气稳压腔密封垫</a></li><li><a href="https://www.amazon.com/b?node=15727921">压力阻尼器</a></li><li><a href="https://www.amazon.com/b?node=15727941">套件</a></li><li><a href="https://www.amazon.com/b?node=15727951">压力调节器</a></li><li><a href="https://www.amazon.com/b?node=15727961">密封</a></li><li><a href="https://www.amazon.com/b?node=15727971">泵</a></li><li><a href="https://www.amazon.com/b?node=15727981">电阻器单元</a></li><li><a href="https://www.amazon.com/b?node=15727991">节流阀体喷射套件</a></li><li><a href="https://www.amazon.com/b?node=15728001">节气门控制器</a></li><li><a href="https://www.amazon.com/b?node=15728011">管路套件</a></li><li><a href="https://www.amazon.com/b?node=15728031">调校保养套件</a></li><li><a href="https://www.amazon.com/b?node=15728021">调谐进气喷射系统配件</a></li><li><a href="https://www.amazon.com/b?node=15728061">辅助阀</a></li><li><a href="https://www.amazon.com/b?node=15728071">冷启动阀</a></li><li><a href="https://www.amazon.com/b?node=15728081">频率阀</a></li><li><a href="https://www.amazon.com/b?node=15728091">节流阀</a></li><li><a href="https://www.amazon.com/b?node=15728101">阀门套件</a></li><li><a href="https://www.amazon.com/b?node=15728111">阀密封</a></li><li><a href="https://www.amazon.com/b?node=15728151">电动燃油泵</a></li><li><a href="https://www.amazon.com/b?node=15728161">燃油泵过滤器</a></li><li><a href="https://www.amazon.com/b?node=15728171">机械燃油泵</a></li><li><a href="https://www.amazon.com/b?node=15728181">垫片</a></li><li><a href="https://www.amazon.com/b?node=15728191">滤网</a></li><li><a href="https://www.amazon.com/b?node=15728211">加油器颈</a></li><li><a href="https://www.amazon.com/b?node=15728221">燃油箱</a></li><li><a href="https://www.amazon.com/b?node=15728231">锁圈和密封</a></li><li><a href="https://www.amazon.com/b?node=15728241">选择器阀</a></li><li><a href="https://www.amazon.com/b?node=15728261">电热塞套件</a></li><li><a href="https://www.amazon.com/b?node=15728271">管线</a></li><li><a href="https://www.amazon.com/b?node=15728281">节气门机构</a></li><li><a href="https://www.amazon.com/b?node=15728291">节流阀体垫片和适配器</a></li></ul></details><details class="deferred-group"><summary>转向、承载与乘员防护</summary><ul><li><a href="https://www.amazon.com/b?node=15737151">转向配件</a></li><li><a href="https://www.amazon.com/b?node=15737161">方向盘套</a></li><li><a href="https://www.amazon.com/b?node=15737171">方向盘助力手柄</a></li><li><a href="https://www.amazon.com/b?node=404720011">方向盘</a></li><li><a href="https://www.amazon.com/b?node=15717281">动力转向</a></li><li><a href="https://www.amazon.com/b?node=15717291">齿轮齿条转向器</a></li><li><a href="https://www.amazon.com/b?node=15710211">安全带</a></li><li><a href="https://www.amazon.com/b?node=15710271">转向柱</a></li><li><a href="https://www.amazon.com/b?node=15710281">方向盘</a></li><li><a href="https://www.amazon.com/b?node=15731451">控制阀套件</a></li><li><a href="https://www.amazon.com/b?node=15731461">控制阀</a></li><li><a href="https://www.amazon.com/b?node=15731471">油缸软管</a></li><li><a href="https://www.amazon.com/b?node=15731481">阻尼器和转向稳定器</a></li><li><a href="https://www.amazon.com/b?node=15731491">阻尼器硬件和零件</a></li><li><a href="https://www.amazon.com/b?node=15731501">柔性联轴器</a></li><li><a href="https://www.amazon.com/b?node=15731511">齿轮箱</a></li><li><a href="https://www.amazon.com/b?node=15731531">动力气缸套件</a></li><li><a href="https://www.amazon.com/b?node=15731541">动力气缸</a></li><li><a href="https://www.amazon.com/b?node=15731551">压力软管</a></li><li><a href="https://www.amazon.com/b?node=15731561">泵重建套件</a></li><li><a href="https://www.amazon.com/b?node=15731571">动力转向泵</a></li><li><a href="https://www.amazon.com/b?node=15731581">回流软管</a></li><li><a href="https://www.amazon.com/b?node=15731601">波纹管套件</a></li><li><a href="https://www.amazon.com/b?node=15731611">完整单元</a></li><li><a href="https://www.amazon.com/b?node=15731621">安装衬套</a></li><li><a href="https://www.amazon.com/b?node=15731631">密封套件</a></li><li><a href="https://www.amazon.com/b?node=15731641">转向机短总成</a></li></ul></details><details class="deferred-group"><summary>需专门供应链的制动件</summary><ul><li><a href="https://www.amazon.com/b?node=5285440011">制动配件</a></li><li><a href="https://www.amazon.com/b?node=404700011">制动衬块</a></li><li><a href="https://www.amazon.com/b?node=404698011">制动卡钳</a></li><li><a href="https://www.amazon.com/b?node=404699011">盘式制动器</a></li><li><a href="https://www.amazon.com/b?node=404701011">刹车鼓</a></li><li><a href="https://www.amazon.com/b?node=5285441011">摩托车制动盘</a></li><li><a href="https://www.amazon.com/b?node=15710941">制动套件</a></li><li><a href="https://www.amazon.com/b?node=15710951">制动垫</a></li><li><a href="https://www.amazon.com/b?node=46080011">制动卡钳</a></li><li><a href="https://www.amazon.com/b?node=346824011">配件</a></li><li><a href="https://www.amazon.com/b?node=15711171">软管</a></li><li><a href="https://www.amazon.com/b?node=15721651">ABS执行器总成</a></li><li><a href="https://www.amazon.com/b?node=15721661">控制模块</a></li><li><a href="https://www.amazon.com/b?node=15721681">调制器阀</a></li><li><a href="https://www.amazon.com/b?node=15721691">压力胶管</a></li><li><a href="https://www.amazon.com/b?node=15721701">泵和电机总成</a></li><li><a href="https://www.amazon.com/b?node=46182011">调节螺钉总成</a></li><li><a href="https://www.amazon.com/b?node=46187011">调节螺钉弹簧</a></li><li><a href="https://www.amazon.com/b?node=15721761">抗噪弹簧</a></li><li><a href="https://www.amazon.com/b?node=15721781">底杯</a></li><li><a href="https://www.amazon.com/b?node=15721791">制动套件</a></li><li><a href="https://www.amazon.com/b?node=15721811">刹车垫</a></li><li><a href="https://www.amazon.com/b?node=15732681">制动压力继电器</a></li><li><a href="https://www.amazon.com/b?node=3143827011">鼓制动</a></li><li><a href="https://www.amazon.com/b?node=15721921">停车制动</a></li><li><a href="https://www.amazon.com/b?node=15721961">衬套</a></li><li><a href="https://www.amazon.com/b?node=15721981">调节器电缆</a></li><li><a href="https://www.amazon.com/b?node=15721991">导向</a></li><li><a href="https://www.amazon.com/b?node=15722001">驻车制动拉索</a></li><li><a href="https://www.amazon.com/b?node=15722041">镀镉三通</a></li><li><a href="https://www.amazon.com/b?node=15722051">卡钳泄放螺钉</a></li><li><a href="https://www.amazon.com/b?node=46205011">卡钳螺栓和销</a></li><li><a href="https://www.amazon.com/b?node=15722061">卡钳支架</a></li><li><a href="https://www.amazon.com/b?node=46206011">制动器衬套套件</a></li><li><a href="https://www.amazon.com/b?node=46207011">卡钳活塞</a></li><li><a href="https://www.amazon.com/b?node=46208011">制动卡钳维修套件</a></li><li><a href="https://www.amazon.com/b?node=46210011">卡钳对</a></li><li><a href="https://www.amazon.com/b?node=46211011">带刹车片的制动卡钳</a></li><li><a href="https://www.amazon.com/b?node=46212011">不含刹车片的制动卡钳</a></li><li><a href="https://www.amazon.com/b?node=46217011">组合轴套件</a></li><li><a href="https://www.amazon.com/b?node=46218011">圆盘硬件套件</a></li><li><a href="https://www.amazon.com/b?node=15722071">转鼓杆</a></li><li><a href="https://www.amazon.com/b?node=15722081">鼓式制动器垫板</a></li><li><a href="https://www.amazon.com/b?node=46221011">鼓硬件套件</a></li><li><a href="https://www.amazon.com/b?node=46226011">刹车鼓</a></li><li><a href="https://www.amazon.com/b?node=15722091">储液槽</a></li><li><a href="https://www.amazon.com/b?node=46231011">压紧弹簧</a></li><li><a href="https://www.amazon.com/b?node=46232011">压紧零件套件</a></li><li><a href="https://www.amazon.com/b?node=15721801">制动线路</a></li><li><a href="https://www.amazon.com/b?node=346823011">配件</a></li><li><a href="https://www.amazon.com/b?node=15722351">软管</a></li><li><a href="https://www.amazon.com/b?node=15722391">液压零件</a></li><li><a href="https://www.amazon.com/b?node=15722401">液压单元</a></li><li><a href="https://www.amazon.com/b?node=15722421">瓶盖密封圈</a></li><li><a href="https://www.amazon.com/b?node=15722431">制动主缸储液罐盖</a></li><li><a href="https://www.amazon.com/b?node=15722441">软管</a></li><li><a href="https://www.amazon.com/b?node=15722451">主缸</a></li><li><a href="https://www.amazon.com/b?node=15722461">维修重建套件</a></li><li><a href="https://www.amazon.com/b?node=46239011">垫片</a></li><li><a href="https://www.amazon.com/b?node=4543051011">驻车制动杆复位弹簧</a></li><li><a href="https://www.amazon.com/b?node=4543052011">驻车制动杆</a></li><li><a href="https://www.amazon.com/b?node=4543053011">驻车制动蹄铁</a></li><li><a href="https://www.amazon.com/b?node=15722491">驻车制动系统</a></li><li><a href="https://www.amazon.com/b?node=15722501">销钉锁</a></li><li><a href="https://www.amazon.com/b?node=15722511">踏板垫</a></li><li><a href="https://www.amazon.com/b?node=15722531">C型垫圈</a></li><li><a href="https://www.amazon.com/b?node=15722541">固定器钥匙</a></li><li><a href="https://www.amazon.com/b?node=15722551">电动刹车系统</a></li><li><a href="https://www.amazon.com/b?node=15722561">比例阀</a></li><li><a href="https://www.amazon.com/b?node=15722821">复位弹簧</a></li><li><a href="https://www.amazon.com/b?node=46244011">制动盘</a></li><li><a href="https://www.amazon.com/b?node=15722841">自调整维修套件</a></li><li><a href="https://www.amazon.com/b?node=15730631">制动液水平</a></li><li><a href="https://www.amazon.com/b?node=21421241011">刹车踏板位置</a></li><li><a href="https://www.amazon.com/b?node=21421242011">制动压力</a></li><li><a href="https://www.amazon.com/b?node=15730641">制动磨损</a></li><li><a href="https://www.amazon.com/b?node=15721751">轮速传感器</a></li><li><a href="https://www.amazon.com/b?node=15722851">制动蹄片卡扣</a></li><li><a href="https://www.amazon.com/b?node=46255011">套筒稳定器</a></li><li><a href="https://www.amazon.com/b?node=15722861">支持键</a></li><li><a href="https://www.amazon.com/b?node=15722871">支撑弹簧</a></li><li><a href="https://www.amazon.com/b?node=15722891">拖车制动</a></li><li><a href="https://www.amazon.com/b?node=15722901">阀门</a></li><li><a href="https://www.amazon.com/b?node=15722911">轮缸泄放螺钉</a></li><li><a href="https://www.amazon.com/b?node=46258011">轮缸套件</a></li><li><a href="https://www.amazon.com/b?node=15722921">轮缸零件</a></li><li><a href="https://www.amazon.com/b?node=46265011">轮缸</a></li></ul></details></section><p class="foot"><a href="./">返回筛选页</a></p></body></html>

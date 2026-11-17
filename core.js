@@ -94,7 +94,7 @@
       originalTitle,
       highlights: strList(p.highlights),
       originalHighlights: strList(p.originalHighlights),
-      translationStatus: translated ? 'translated' : 'pending',
+      translationStatus: translated ? 'translated' : p.translationStatus === 'partial' ? 'partial' : 'pending',
       image: safeUrl(p.image),
       productUrl: safeUrl(p.productUrl) || (asin && mode !== 'mock' ? `https://www.amazon.com/dp/${asin}` : null),
       price: num(p.price),
@@ -215,7 +215,9 @@
   const DEFAULT_FILTERS = Object.freeze({ seller: 'all', fulfillment: 'all', size: 'pass', query: '' });
   function sizeBucket(p) { return p.pkg.status === 'conflict' ? 'unknown' : p.pkg.status; }
   function matchesProduct(p, f) {
-    return (f.seller === 'all' || p.seller === f.seller)
+    return (f.minPrice === undefined || (p.price !== null && p.price >= f.minPrice))
+      && (f.minSales === undefined || (p.sales !== null && p.sales >= f.minSales))
+      && (f.seller === 'all' || p.seller === f.seller)
       && (f.fulfillment === 'all' || p.fulfillment === f.fulfillment)
       && (f.size === 'all' || sizeBucket(p) === f.size);
   }
@@ -409,7 +411,7 @@
     const dims = s.pkg && s.pkg.dims ? s.pkg.dims.map(round2) : [null, null, null];
     return [
       s.name, (s.highlights || []).join('；') || null, s.originalTitle, (s.originalHighlights || []).join('; ') || null,
-      s.translationStatus === 'translated' ? '已翻译' : '待翻译',
+      s.translationStatus === 'translated' ? '已翻译' : s.translationStatus === 'partial' ? '汽配术语中译' : '待翻译',
       s.categoryPath, s.price, s.sales, s.date, s.variationCount, s.fbaFee, s.fbaFeeBasis || null,
       s.seller, s.sellerName, s.sellerBasis || null, s.fulfillment,
       ...dims, s.pkg ? round2(s.pkg.value) : null, s.pkg ? SIZE_TEXT[s.pkg.status] : '待补尺寸', s.pkg ? s.pkg.source : null,
