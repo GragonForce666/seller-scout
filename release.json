@@ -3,7 +3,7 @@
   "categories": 735,
   "products": 11203,
   "files": 368,
-  "bytes": 50520411,
+  "bytes": 50674888,
   "source": "Adopted ui/ static app; no raw captures, credentials or agent logs",
   "coverage": {
     "completed": 1615,
